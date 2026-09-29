@@ -1,0 +1,4 @@
+# Server (Python >= 3.10)
+Flask>=3.0,<4
+Pillow>=10
+waitress>=3.0

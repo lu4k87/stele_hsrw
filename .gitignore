@@ -1,0 +1,7 @@
+# Laufzeitdaten (Datenbank, Medien, Schlüssel) – nie einchecken
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log

@@ -1,0 +1,205 @@
+/* Design-Tokens der Admin-Oberfläche (hell + dunkel).
+   Farben nur über diese Variablen verwenden. Kontraste: Text ≥ 4,5:1 auf --surface und --bg. */
+
+:root {
+  color-scheme: light;
+
+  /* Flächen */
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-2: #f7f9fc;
+  --surface-3: #eceff4;
+  --surface-hover: #f1f4f9;
+  --border: #d3dae4;
+  --border-strong: #aab5c4;
+  --scrim: rgba(15, 23, 42, .5);
+
+  /* Text */
+  --text: #111827;
+  --text-2: #333e4e;     /* Nebentext, 10:1 */
+  --text-3: #4a5567;     /* Hinweise, 7:1 */
+  --text-inverse: #ffffff;
+
+  /* Aktion / Info */
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-text: #1d4ed8;
+  --primary-soft: #e7eefe;
+  --primary-soft-border: #b9cdfb;
+  --on-primary: #ffffff;
+  --focus: #2563eb;
+
+  /* Zustände (Text-Farbe / Fläche / Rand) */
+  --success: #15803d;
+  --success-soft: #e6f5eb;
+  --success-border: #a7dcb8;
+  --warning: #a14b06;
+  --warning-soft: #fff3df;
+  --warning-border: #f2c98a;
+  --danger: #b91c1c;
+  --danger-hover: #991b1b;
+  --danger-soft: #fdecec;
+  --danger-border: #f3b4b4;
+  --neutral: #3b4556;
+  --neutral-soft: #edf0f4;
+  --neutral-border: #cdd4de;
+
+  /* Seitenleiste (in beiden Modi dunkel) */
+  --nav-bg: #0f1d33;
+  --nav-bg-2: #13243f;
+  --nav-text: #dbe4f1;
+  --nav-text-2: #b3c2d8;
+  --nav-hover: #1a2d4c;
+  --nav-active: #213a62;
+  --nav-accent: #74aeff;
+  --nav-border: #22375a;
+
+  /* Schrift */
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  --fs-sm: 14px;
+  --fs-base: 15px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 21px;
+  --fs-2xl: 26px;
+  --fs-3xl: 32px;
+  --lh: 1.5;
+  --lh-tight: 1.25;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Abstände */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Formen */
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-full: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
+  --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .05);
+  --shadow-md: 0 6px 16px -4px rgba(16, 24, 40, .14), 0 2px 6px -2px rgba(16, 24, 40, .06);
+  --shadow-lg: 0 20px 40px -12px rgba(16, 24, 40, .28);
+
+  /* Bedienelemente */
+  --control-h: 38px;
+  --control-h-sm: 32px;
+  --control-h-lg: 44px;
+
+  /* Shell */
+  --sidebar-w: 256px;
+  --sidebar-w-collapsed: 72px;
+  --topbar-h: 60px;
+  --content-max: 1600px;
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --dur: 160ms;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --control-h-sm: 40px;
+  }
+}
+
+/* Dunkel: explizit gewählt … */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --surface: #111a2c;
+  --surface-2: #0e1727;
+  --surface-3: #1a2539;
+  --surface-hover: #172236;
+  --border: #27344b;
+  --border-strong: #3a4a66;
+  --scrim: rgba(2, 6, 16, .66);
+  --text: #e9eef6;
+  --text-2: #c7d1df;
+  --text-3: #a9b6c8;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-text: #8cb8ff;
+  --primary-soft: #16264a;
+  --primary-soft-border: #2d4a86;
+  --focus: #8cb8ff;
+  --success: #5ad38a;
+  --success-soft: #0f2a1d;
+  --success-border: #1f5a39;
+  --warning: #f5b547;
+  --warning-soft: #2c2110;
+  --warning-border: #6b4d17;
+  --danger: #ff8a8a;
+  --danger-hover: #ffa3a3;
+  --danger-soft: #2e1519;
+  --danger-border: #6e2a31;
+  --neutral: #c7d1df;
+  --neutral-soft: #1c273a;
+  --neutral-border: #334259;
+  --nav-bg: #0a1322;
+  --nav-bg-2: #0d1829;
+  --nav-hover: #152440;
+  --nav-active: #1b3259;
+  --nav-border: #1a2a45;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .45);
+  --shadow-md: 0 8px 20px -6px rgba(0, 0, 0, .6);
+  --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, .7);
+}
+
+/* … oder vom System übernommen */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b1220;
+    --surface: #111a2c;
+    --surface-2: #0e1727;
+    --surface-3: #1a2539;
+    --surface-hover: #172236;
+    --border: #27344b;
+    --border-strong: #3a4a66;
+    --scrim: rgba(2, 6, 16, .66);
+    --text: #e9eef6;
+    --text-2: #c7d1df;
+    --text-3: #a9b6c8;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-text: #8cb8ff;
+    --primary-soft: #16264a;
+    --primary-soft-border: #2d4a86;
+    --focus: #8cb8ff;
+    --success: #5ad38a;
+    --success-soft: #0f2a1d;
+    --success-border: #1f5a39;
+    --warning: #f5b547;
+    --warning-soft: #2c2110;
+    --warning-border: #6b4d17;
+    --danger: #ff8a8a;
+    --danger-hover: #ffa3a3;
+    --danger-soft: #2e1519;
+    --danger-border: #6e2a31;
+    --neutral: #c7d1df;
+    --neutral-soft: #1c273a;
+    --neutral-border: #334259;
+    --nav-bg: #0a1322;
+    --nav-bg-2: #0d1829;
+    --nav-hover: #152440;
+    --nav-active: #1b3259;
+    --nav-border: #1a2a45;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow: 0 1px 3px rgba(0, 0, 0, .45);
+    --shadow-md: 0 8px 20px -6px rgba(0, 0, 0, .6);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, .7);
+  }
+}

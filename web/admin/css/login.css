@@ -1,0 +1,89 @@
+/* Anmeldeseite */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  background: var(--bg);
+}
+
+/* Markenseite mit stilisierter Stele */
+.login__brand {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-8);
+  padding: var(--sp-10) clamp(24px, 5vw, 72px);
+  background:
+    radial-gradient(900px 600px at 85% 15%, rgba(116, 174, 255, .20), transparent 60%),
+    linear-gradient(160deg, #0f1d33 0%, #13284a 55%, #0c1a30 100%);
+  color: #fff;
+}
+.login__logo { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+.login__claim { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 30ch; }
+.login__claim h1 { color: #fff; font-size: clamp(28px, 3vw, 40px); line-height: 1.15; letter-spacing: -.015em; }
+.login__claim p { color: #c9d6ea; font-size: var(--fs-md); }
+.login__features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); color: #dbe5f4; }
+.login__features li { display: flex; gap: var(--sp-3); align-items: center; }
+.login__features .icon { color: var(--nav-accent); width: 20px; height: 20px; }
+
+.login__art { display: flex; justify-content: center; align-items: flex-end; flex: 1; min-height: 0; }
+.mini-stele { display: flex; flex-direction: column; align-items: center; }
+.mini-stele__screen {
+  width: 150px; aspect-ratio: 9 / 16; border-radius: 10px; overflow: hidden;
+  border: 6px solid #1d2a40; background: #0b1426;
+  display: flex; flex-direction: column; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6);
+}
+.mini-stele__head { height: 11%; background: #0f2747; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+.mini-stele__head span { display: block; height: 5px; border-radius: 3px; background: #dce6f5; }
+.mini-stele__head span:first-child { width: 42%; }
+.mini-stele__head span:last-child { width: 18%; background: #f5b400; }
+.mini-stele__slide { flex: 1; position: relative; overflow: hidden; }
+.mini-stele__slide i {
+  position: absolute; inset: 0; opacity: 0;
+  animation: mini-slides 12s infinite;
+}
+.mini-stele__slide i:nth-child(1) { background: linear-gradient(160deg, #2563eb, #7c3aed); animation-delay: 0s; }
+.mini-stele__slide i:nth-child(2) { background: linear-gradient(160deg, #0f766e, #22c55e); animation-delay: 4s; }
+.mini-stele__slide i:nth-child(3) { background: linear-gradient(160deg, #c2410c, #f59e0b); animation-delay: 8s; }
+.mini-stele__slide b { position: absolute; left: 10px; right: 30%; bottom: 18%; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .9); z-index: 1; }
+.mini-stele__slide b + b { bottom: 11%; right: 45%; background: rgba(255, 255, 255, .65); }
+@keyframes mini-slides { 0% { opacity: 0; } 4% { opacity: 1; } 33% { opacity: 1; } 38% { opacity: 0; } 100% { opacity: 0; } }
+.mini-stele__foot { height: 6%; background: #0f2747; overflow: hidden; display: flex; align-items: center; }
+.mini-stele__foot span { display: block; height: 4px; width: 200%; background: repeating-linear-gradient(90deg, #dce6f5 0 26px, transparent 26px 36px); animation: mini-ticker 6s linear infinite; }
+@keyframes mini-ticker { to { transform: translateX(-50%); } }
+.mini-stele__pole { width: 14px; height: 34px; background: #1d2a40; }
+.mini-stele__base { width: 90px; height: 10px; border-radius: 6px 6px 2px 2px; background: #1d2a40; }
+
+/* Formularseite */
+.login__panel { display: flex; align-items: center; justify-content: center; padding: var(--sp-8) var(--sp-5); }
+.login__card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--sp-6); }
+.login__head { display: flex; flex-direction: column; gap: var(--sp-2); }
+.login__head h2 { font-size: var(--fs-2xl); }
+.login__head p { color: var(--text-2); }
+.login__form { display: flex; flex-direction: column; gap: var(--sp-4); }
+.login__caps { color: var(--warning); font-size: var(--fs-sm); font-weight: var(--fw-medium); display: flex; gap: 6px; align-items: center; }
+.login__caps .icon { width: 16px; height: 16px; }
+
+.dev-login { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); border: 1px dashed var(--warning-border); border-radius: var(--r-lg); background: var(--warning-soft); }
+.dev-login__head { display: flex; gap: var(--sp-2); align-items: flex-start; }
+.dev-login__head .icon { color: var(--warning); width: 20px; height: 20px; margin-top: 1px; }
+.dev-login__title { font-weight: var(--fw-semibold); }
+.dev-login__text { color: var(--text-2); font-size: var(--fs-sm); }
+.dev-login__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: var(--sp-2); }
+.dev-login__btn {
+  display: flex; align-items: center; gap: var(--sp-3); text-align: left;
+  min-height: 52px; padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--surface); color: var(--text);
+}
+.dev-login__btn:hover { border-color: var(--primary); background: var(--surface-hover); }
+.dev-login__btn .avatar { width: 32px; height: 32px; }
+.dev-login__who { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.dev-login__role { font-weight: var(--fw-semibold); }
+.dev-login__name { color: var(--text-2); font-size: var(--fs-sm); }
+.login__foot { color: var(--text-3); font-size: var(--fs-sm); text-align: center; }
+
+@media (max-width: 960px) {
+  .login { grid-template-columns: minmax(0, 1fr); }
+  .login__brand { padding: var(--sp-6) var(--sp-5); gap: var(--sp-4); }
+  .login__art, .login__features { display: none; }
+  .login__claim h1 { font-size: 26px; }
+}
