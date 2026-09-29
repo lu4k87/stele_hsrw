@@ -207,6 +207,11 @@ export default async function mount(root, ctx) {
   }
 
   load();
+  // Direktlink „Neue Präsentation“ (z. B. aus der Übersicht): #/presentations?new=1
+  if (ctx.query.new === '1') {
+    ctx.setQuery({ new: null });
+    if (canEdit) openCreate();
+  }
   return () => {};
 }
 

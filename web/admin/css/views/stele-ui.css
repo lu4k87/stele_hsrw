@@ -1,0 +1,65 @@
+/* Gemeinsame Stelen-Bausteine (js/ui/stele-ui.js): Karte, „läuft jetzt“, Live-Ansicht, Kopierfeld. */
+
+.stele-now { display: flex; align-items: flex-start; gap: var(--sp-2); min-width: 0; }
+.stele-now > .icon { color: var(--success); margin-top: 2px; }
+.stele-now--none > .icon { color: var(--warning); }
+.stele-now__text { min-width: 0; overflow-wrap: anywhere; }
+.stele-now__label { color: var(--text-2); }
+.stele-now__hint { color: var(--text-2); font-size: var(--fs-sm); }
+
+/* Karte */
+.stele-card { display: flex; flex-direction: column; min-width: 0; }
+.stele-card__head { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5) var(--sp-3); flex-wrap: wrap; }
+.stele-card__icon {
+  width: 40px; height: 40px; flex: none; border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-3); color: var(--text-2);
+}
+.stele-card__titles { flex: 1 1 160px; min-width: 0; }
+.stele-card__h { font-size: var(--fs-md); }
+.stele-card__title { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.stele-card__title:hover { text-decoration: underline; }
+.stele-card__sub { color: var(--text-2); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.stele-card__body { display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-3); }
+.stele-card__facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px var(--sp-3); margin: 0; font-size: var(--fs-sm); }
+.stele-card__facts dt { color: var(--text-2); }
+.stele-card__facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.stele-card .stele-live { padding: 0 var(--sp-5) var(--sp-3); }
+.stele-card__actions {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center;
+  margin-top: auto; padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--border); background: var(--surface-2);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+.stele-card__more { margin-left: auto; }
+
+/* Live-Ansicht */
+.stele-live { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.stele-live__toggle { align-self: flex-start; }
+.stele-live__region { display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; }
+.stele-live__region .player-frame { width: auto; height: min(420px, 70vh); max-width: 100%; }
+.stele-live__note { color: var(--text-2); font-size: var(--fs-sm); text-align: center; max-width: 42ch; }
+
+/* Kopierfeld */
+.stele-copy { display: flex; gap: var(--sp-2); align-items: stretch; flex-wrap: wrap; min-width: 0; }
+.stele-copy > .input, .stele-copy > .textarea { flex: 1 1 240px; min-width: 0; }
+.stele-copy__btns { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.stele-copy--multi { flex-direction: column; }
+.stele-copy--multi > .textarea { flex: none; }
+.stele-copy--multi .stele-copy__btns { justify-content: flex-end; }
+.stele-copy__text { min-height: 72px; font-size: var(--fs-sm); word-break: break-all; }
+
+/* Hinweise / Störungen */
+.stele-alerts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.stele-alert {
+  --al-fg: var(--warning); --al-bg: var(--warning-soft); --al-border: var(--warning-border);
+  display: flex; align-items: flex-start; gap: var(--sp-3); flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4); border: 1px solid var(--al-border); border-left-width: 4px;
+  border-radius: var(--r); background: var(--al-bg);
+}
+.stele-alert--error { --al-fg: var(--danger); --al-bg: var(--danger-soft); --al-border: var(--danger-border); }
+.stele-alert > .icon { color: var(--al-fg); margin-top: 1px; }
+.stele-alert__body { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.stele-alert__level { font-weight: var(--fw-semibold); color: var(--al-fg); }
+.stele-alert__time { color: var(--text-2); font-size: var(--fs-sm); }
+.stele-alert__link { flex: none; }

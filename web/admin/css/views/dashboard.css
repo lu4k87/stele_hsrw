@@ -1,0 +1,21 @@
+/* Übersicht (#/) – Präfix dash__ */
+.dash { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+.dash__cols { display: grid; gap: var(--sp-6); grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); align-items: start; }
+.dash__cols--single { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .dash__cols { grid-template-columns: minmax(0, 1fr); } }
+.dash__main, .dash__side { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+.dash__side { gap: var(--sp-5); }
+.dash__list-card .card__footer { justify-content: flex-start; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+.dash__list-card .list > li { flex-wrap: wrap; }
+.dash__list-card .list__main { flex: 1 1 200px; }
+.dash__list-card .list__title { color: var(--text); }
+a.list__title { text-decoration-color: var(--border-strong); }
+a.list__title:hover { text-decoration-color: currentColor; }
+.dash__note { font-style: italic; overflow-wrap: anywhere; }
+.dash__empty { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-5); color: var(--text-2); }
+.dash__empty .icon { color: var(--success); }
+.dash__activity { align-items: flex-start !important; flex-wrap: nowrap !important; }
+.dash__activity .avatar { width: 30px; height: 30px; font-size: var(--fs-sm); }
+.dash__sentence { overflow-wrap: anywhere; }
+.dash__counts { text-align: center; }
+.dash__steles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }

@@ -1,0 +1,4 @@
+/* Stelen-Liste (#/steles) – Präfix steles__ */
+.steles__status:empty { display: none; }
+.steles__status { margin-top: calc(var(--sp-3) * -1); }
+.steles__grid { align-items: stretch; }

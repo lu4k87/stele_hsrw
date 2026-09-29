@@ -1,0 +1,11 @@
+/* Einstellungen (#/settings) – Präfix set- */
+.set-save {
+  position: sticky; bottom: var(--sp-4); z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border); border-radius: var(--r-lg);
+  background: var(--surface); box-shadow: var(--shadow-md);
+}
+.set-save__state { margin-right: auto; color: var(--text-2); font-size: var(--fs-sm); }
+.set-save__dirty { display: inline-flex; align-items: center; gap: 6px; color: var(--warning); font-weight: var(--fw-semibold); }
+.set-save .input-group, .tabs__panel .input-group { max-width: 260px; }
+.set-tools .chip { white-space: normal; }

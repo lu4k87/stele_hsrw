@@ -1,0 +1,61 @@
+/* Kleine Diagramme (js/ui/charts.js). Nur Tokens; Farbe nie allein – Werte stehen immer als Text daneben. */
+
+/* ---------- Sparkline ---------- */
+.chart-spark { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.chart-spark__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.chart-spark__label { color: var(--text-2); font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.chart-spark__value { font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
+.chart-spark.is-warning .chart-spark__value { color: var(--warning); }
+.chart-spark.is-danger .chart-spark__value { color: var(--danger); }
+.chart-spark__svg { width: 100%; height: 44px; overflow: visible; }
+.chart-spark__line { fill: none; stroke: var(--primary-text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-spark__area { fill: var(--primary-soft); stroke: none; }
+.chart-spark__none {
+  height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--border); border-radius: var(--r-sm); color: var(--text-3); font-size: var(--fs-sm);
+}
+.chart-spark__range { display: flex; justify-content: space-between; color: var(--text-3); font-size: var(--fs-sm); }
+
+/* ---------- Balkenliste ---------- */
+.chart-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.chart-bars__item { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.chart-bars__row { display: flex; justify-content: space-between; gap: var(--sp-3); min-width: 0; }
+.chart-bars__label { font-size: var(--fs-sm); }
+.chart-bars__value { font-size: var(--fs-sm); font-weight: var(--fw-semibold); flex: none; }
+.chart-bars__track { height: 8px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; }
+.chart-bars__fill { height: 100%; background: var(--primary); border-radius: inherit; }
+
+/* ---------- Säulen ---------- */
+.chart-cols { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.chart-cols__plot {
+  display: flex; align-items: flex-end; gap: 2px; height: var(--chart-h, 96px);
+  border-bottom: 1px solid var(--border-strong); padding-top: 4px;
+}
+.chart-cols__col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
+.chart-cols__bar { width: 100%; min-height: 1px; background: var(--primary); border-radius: 2px 2px 0 0; }
+.chart-cols__axis { display: flex; gap: 2px; }
+.chart-cols__axis span { flex: 1 1 0; min-width: 0; font-size: var(--fs-sm); color: var(--text-3); text-align: left; white-space: nowrap; overflow: visible; }
+
+/* ---------- Verfügbarkeitsband ---------- */
+.chart-avail { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chart-avail__track {
+  position: relative; height: 22px; border-radius: var(--r-sm); overflow: hidden;
+  background: repeating-linear-gradient(135deg, var(--danger-soft) 0 6px, var(--surface-3) 6px 12px);
+  border: 1px solid var(--border);
+}
+.chart-avail--compact .chart-avail__track { height: 12px; }
+.chart-avail__on { position: absolute; top: 0; bottom: 0; background: var(--success); }
+.chart-avail__pre { position: absolute; top: 0; bottom: 0; left: 0; background: var(--surface-3); border-right: 1px solid var(--border-strong); }
+.chart-avail__axis { display: flex; justify-content: space-between; color: var(--text-3); font-size: var(--fs-sm); }
+.chart-avail__legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-sm); color: var(--text-2); }
+.chart-avail__key { display: inline-flex; align-items: center; gap: 6px; }
+.chart-avail__key::before { content: ""; width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--border); }
+.chart-avail__key--on::before { background: var(--success); }
+.chart-avail__key--pre::before { background: var(--surface-3); }
+.chart-avail__key--off::before { background: repeating-linear-gradient(135deg, var(--danger-soft) 0 3px, var(--surface-3) 3px 6px); }
+
+/* ---------- Füllstand ---------- */
+.chart-meter { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chart-meter__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--sp-3); font-size: var(--fs-sm); }
+.chart-meter__label { color: var(--text-2); font-weight: var(--fw-medium); }
+.chart-meter__value { font-weight: var(--fw-semibold); text-align: right; }

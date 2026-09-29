@@ -156,6 +156,9 @@
 /* ---------- Kleinere Bildschirme ---------- */
 @media (max-width: 1280px) {
   .user-button__text { display: none; }
+  /* Platz für die Brotkrumen: Kopfleisten-Pillen nur noch mit Icon/Status */
+  .env-badge__text, .stele-pill__name { display: none; }
+  .env-badge { padding: 0 8px; }
 }
 @media (max-width: 1023px) {
   .app, .app.is-collapsed { grid-template-columns: minmax(0, 1fr); }

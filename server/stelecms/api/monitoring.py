@@ -34,6 +34,26 @@ def overview():
                     "alerts": steles.compute_alerts(conn, app.config, resolver)})
 
 
+METRICS_MAX = 300
+_METRIC_KEYS = ("cpu", "ram", "disk", "temp")
+
+
+def _downsample(rows, limit=METRICS_MAX):
+    """Messwerte (neueste zuerst) auf höchstens `limit` Punkte mitteln – der Verlauf deckt so
+    den ganzen Zeitraum ab (z. B. 7 Tage) statt nur die letzten Werte."""
+    rows = list(rows)
+    size = max(1, -(-len(rows) // limit))  # aufrunden
+    out = []
+    for i in range(0, len(rows), size):
+        chunk = rows[i:i + size]
+        point = {"ts": chunk[0]["ts"]}
+        for key in _METRIC_KEYS:
+            vals = [r[key] for r in chunk if r[key] is not None]
+            point[key] = round(sum(vals) / len(vals), 1) if vals else None
+        out.append(point)
+    return out
+
+
 @bp.get("/steles/<int:sid>")
 @require("monitoring.view")
 def stele_detail(sid: int):
@@ -45,9 +65,8 @@ def stele_detail(sid: int):
     now = timeutil.utcnow()
     since_dt = now - timedelta(hours=hours)
     since = timeutil.iso(since_dt)
-    metrics = [{"ts": r["ts"], "cpu": r["cpu"], "ram": r["ram"], "disk": r["disk"], "temp": r["temp"]}
-               for r in dbm.rows(conn, "SELECT * FROM stele_metrics WHERE stele_id = ? AND ts >= ? "
-                                       "ORDER BY ts DESC LIMIT ?", (sid, since, LIST_MAX))]
+    metrics = _downsample(dbm.rows(conn, "SELECT ts, cpu, ram, disk, temp FROM stele_metrics "
+                                         "WHERE stele_id = ? AND ts >= ? ORDER BY ts DESC", (sid, since)))
     playback = [{"started_at": r["started_at"], "duration_s": r["duration_s"], "title": r["title"],
                  "content_type": r["ctype"], "presentation_name": r["pname"]}
                 for r in dbm.rows(conn, "SELECT l.*, c.type AS ctype, p.name AS pname FROM playback_log l "

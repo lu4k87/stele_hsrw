@@ -117,7 +117,9 @@ export async function copyText(text) {
 
 /** Initialen für Avatare: „Rita Redaktion“ → „RR“. */
 export function initials(name = '') {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  // Klammerzusätze und Satzzeichen ignorieren: „MK (Admin)“ → „MK“; ein Wort → erste zwei Zeichen
+  const parts = String(name).replace(/\([^)]*\)/g, ' ').trim().split(/\s+/).map((p) => p.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean);
   if (!parts.length) return '?';
-  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }

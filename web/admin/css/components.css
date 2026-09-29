@@ -213,7 +213,10 @@
   border-radius: var(--r-full); border: 1px solid var(--chip-border);
   background: var(--chip-bg); color: var(--chip-fg);
   font-size: var(--fs-sm); font-weight: var(--fw-semibold); line-height: 1.2; white-space: nowrap;
+  max-width: 100%;
 }
+/* Außerhalb von Tabellen darf ein langer Chip in schmalen Spalten umbrechen statt die Seite zu verbreitern */
+.chip:not(.table .chip) { white-space: normal; padding-block: 3px; text-wrap: balance; }
 .chip .icon { width: 15px; height: 15px; }
 .chip--success { --chip-fg: var(--success); --chip-bg: var(--success-soft); --chip-border: var(--success-border); }
 .chip--warning { --chip-fg: var(--warning); --chip-bg: var(--warning-soft); --chip-border: var(--warning-border); }
@@ -264,15 +267,17 @@
 .alert--neutral { --alert-fg: var(--text-2); --alert-bg: var(--surface-2); --alert-border: var(--border); }
 
 /* ---------- Tabellen ---------- */
-.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap { position: relative; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; } /* relative: versteckte Texte (.visually-hidden) bleiben im Scrollbereich */
 .table { width: 100%; font-size: var(--fs-base); }
 .table th, .table td { padding: var(--sp-3) var(--sp-4); text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border); }
 .table th {
   font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-2);
   background: var(--surface-2); white-space: nowrap; position: sticky; top: 0; z-index: 1;
 }
-.table tbody tr:last-child td { border-bottom: 0; }
-.table tbody tr:hover td { background: var(--surface-hover); }
+.table tbody tr:last-child td, .table tbody tr:last-child th { border-bottom: 0; }
+/* Zeilenkopf (dataTable rowHeader): wie eine Datenzelle, nicht wie die Kopfzeile */
+.table tbody th { position: static; background: none; color: var(--text); font-size: var(--fs-base); font-weight: 400; white-space: normal; }
+.table tbody tr:hover td, .table tbody tr:hover th { background: var(--surface-hover); }
 .table tr.is-clickable { cursor: pointer; }
 .table tr.is-selected td { background: var(--primary-soft); }
 .table td.is-num, .table th.is-num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -310,6 +315,8 @@
 /* ---------- Seitenkopf / Werkzeugleiste ---------- */
 .page { padding: var(--sp-6) var(--sp-8) var(--sp-12); max-width: var(--content-max); margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: var(--sp-6); }
 .page--wide { max-width: none; }
+/* Flex-Kinder dürfen schmaler als ihr Inhalt werden – sonst schieben breite Tabellen (.table-wrap) die Seite auf */
+.page > *, .stack > * { min-width: 0; }
 .page--narrow { max-width: 980px; }
 @media (max-width: 760px) { .page { padding: var(--sp-4) var(--sp-4) var(--sp-10); gap: var(--sp-5); } }
 .page-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
@@ -318,7 +325,8 @@
 .page-header__back:hover { color: var(--text); text-decoration: underline; }
 .page-header__back .icon { width: 16px; height: 16px; }
 .page-header__title-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-3); min-width: 0; }
-.page-header__title { overflow-wrap: anywhere; }
+/* break-word statt anywhere: Titel bricht nur um, wenn ein Wort nicht passt (kein „Sommerfes|t“) */
+.page-header__title { overflow-wrap: break-word; }
 .page-header__desc { color: var(--text-2); max-width: 70ch; }
 .page-header__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 

@@ -1,0 +1,29 @@
+/* Protokoll (#/audit) – Präfix aud- */
+.aud-filter { flex: 0 1 200px; min-width: 160px; }
+.aud-custom { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }
+.aud-custom .field { flex: 0 1 180px; }
+.aud-list { list-style: none; margin: 0; padding: 0; }
+.aud-list > li { border-bottom: 1px solid var(--border); }
+.aud-list > li:last-child { border-bottom: 0; }
+.aud-entry__sum {
+  display: flex; align-items: flex-start; gap: var(--sp-3); cursor: pointer; list-style: none;
+  padding: var(--sp-3) var(--sp-5); min-width: 0;
+}
+.aud-entry__sum::-webkit-details-marker { display: none; }
+.aud-entry__sum:hover { background: var(--surface-hover); }
+.aud-entry__sum:focus-visible { outline-offset: -3px; }
+.aud-entry__sum .avatar { width: 32px; height: 32px; }
+.aud-entry__main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.aud-entry__text { overflow-wrap: anywhere; }
+.aud-entry__meta { display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); color: var(--text-2); font-size: var(--fs-sm); }
+.aud-entry__chips { flex: none; }
+.aud-entry__chev { flex: none; color: var(--text-2); transition: transform var(--dur) var(--ease); margin-top: 4px; }
+.aud-entry[open] .aud-entry__chev { transform: rotate(180deg); }
+.aud-entry[open] .aud-entry__sum { background: var(--surface-2); }
+.aud-entry__details { padding: var(--sp-3) var(--sp-5) var(--sp-4) calc(var(--sp-5) + 32px + var(--sp-3)); background: var(--surface-2); }
+.aud-val { font-family: var(--font-mono); font-size: var(--fs-sm); white-space: pre-wrap; }
+.aud-pager { border-top: 1px solid var(--border); }
+@media (max-width: 560px) {
+  .aud-entry__chips { display: none; }
+  .aud-entry__details { padding-left: var(--sp-5); }
+}

@@ -1,0 +1,37 @@
+/* Stele-Detail (#/steles/:id) – Präfix sd- */
+.sd-meta { overflow-wrap: anywhere; }
+.sd-overview {
+  display: grid; gap: var(--sp-6); align-items: start;
+  grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+}
+@media (max-width: 900px) { .sd-overview { grid-template-columns: minmax(0, 1fr); } }
+.sd-live { display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); }
+@media (max-width: 900px) { .sd-live { position: static; } }
+.sd-live .player-frame { width: auto; height: min(740px, 78vh); max-width: 100%; }
+.sd-live__note { display: flex; gap: 6px; align-items: flex-start; text-align: left; max-width: 44ch; }
+.sd-live__note .icon { flex: none; margin-top: 2px; }
+.sd-side { display: grid; gap: var(--sp-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; min-width: 0; }
+.sd-meters { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.sd-warn { display: flex; gap: 6px; align-items: flex-start; color: var(--warning); font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.sd-warn .icon { flex: none; margin-top: 2px; }
+.sd-shot-fig { margin: 0; display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; }
+.sd-shot { max-height: 360px; width: auto; border-radius: var(--r); border: 1px solid var(--border); background: var(--surface-3); }
+
+.sd-settings { max-width: 880px; }
+.sd-sub { padding-left: 52px; grid-template-columns: repeat(auto-fill, minmax(160px, 200px)); }
+@media (max-width: 560px) { .sd-sub { padding-left: 0; } }
+.sd-range-wrap { display: flex; align-items: center; gap: var(--sp-3); max-width: 420px; }
+.sd-range { flex: 1 1 auto; min-width: 0; accent-color: var(--primary); height: 32px; }
+.sd-range__out { min-width: 4.5ch; text-align: right; font-weight: var(--fw-semibold); }
+.sd-save {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-3);
+  padding-top: var(--sp-4); border-top: 1px solid var(--border);
+}
+
+.sd-conn { max-width: 920px; }
+.sd-log { display: grid; gap: var(--sp-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
+.sd-pad { padding: var(--sp-5); }
+
+@media (max-width: 640px) { .sd-hide-sm { display: none; } }
+@media (max-width: 900px) { .sd-live .player-frame { height: min(740px, 62vh); } }
+.sd-meters .chart-meter__value { white-space: nowrap; }

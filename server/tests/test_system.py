@@ -295,3 +295,13 @@ def test_demo_seed(tmp_path):
     assert labels == ["Über uns", "Öffnungszeiten", "Galerie", "Veranstaltungen"]
     for user, pw in (("redaktion", "redaktion123"), ("autor", "autor123"), ("betrachter", "betrachter123")):
         Client(app).login(user, pw)
+
+
+def test_metrics_downsample_covers_whole_range():
+    from stelecms.api.monitoring import _downsample, METRICS_MAX
+    rows = [{"ts": f"t{i:05d}", "cpu": float(i % 10), "ram": 50.0, "disk": None, "temp": 40.0} for i in range(1000)]
+    out = _downsample(rows)
+    assert len(out) <= METRICS_MAX
+    assert out[0]["ts"] == "t00000" and out[-1]["ts"] >= "t00996"   # erster bis letzter Abschnitt
+    assert out[0]["disk"] is None and out[0]["ram"] == 50.0
+    assert _downsample([]) == []

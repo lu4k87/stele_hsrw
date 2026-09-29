@@ -1,0 +1,48 @@
+/* Stele hinzufügen / koppeln (js/ui/stele-wizard.js) – Präfix wiz- */
+.wiz-stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5); counter-reset: none; }
+.wiz-stepper__item { display: flex; align-items: center; gap: var(--sp-2); color: var(--text-2); font-weight: var(--fw-medium); }
+.wiz-stepper__num {
+  width: 28px; height: 28px; flex: none; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 2px solid var(--border-strong); font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text-2);
+}
+.wiz-stepper__item.is-current { color: var(--text); }
+.wiz-stepper__item.is-current .wiz-stepper__num { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+.wiz-stepper__item.is-done .wiz-stepper__num { border-color: var(--success); background: var(--success-soft); color: var(--success); }
+.wiz-body { min-height: 240px; }
+
+.wiz-res__custom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.wiz-res__custom .input-group { width: 130px; }
+
+.wiz-methods { border: 0; margin: 0; padding: 0; display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.wiz-methods legend { margin-bottom: var(--sp-2); padding: 0; }
+.wiz-method {
+  display: flex; gap: var(--sp-3); align-items: flex-start; cursor: pointer;
+  padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border-strong); border-radius: var(--r);
+  background: var(--surface);
+}
+.wiz-method:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 1px var(--primary); }
+.wiz-method input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); flex: none; }
+.wiz-method > span { display: flex; flex-direction: column; gap: 2px; }
+
+.wiz-steps-help { display: flex; flex-direction: column; gap: 6px; padding-left: 1.4em; color: var(--text-2); }
+.wiz-steps-help code { color: var(--text); overflow-wrap: anywhere; background: var(--surface-3); padding: 1px 6px; border-radius: 4px; }
+
+.wiz-pending { display: flex; flex-direction: column; gap: var(--sp-2); }
+.wiz-pending__empty {
+  display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4);
+  border: 1px dashed var(--border-strong); border-radius: var(--r); color: var(--text-2);
+}
+.wiz-pending__item {
+  display: flex; align-items: center; gap: var(--sp-3); text-align: left;
+  min-height: 56px; padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--surface); color: var(--text);
+}
+.wiz-pending__item:hover { background: var(--surface-hover); }
+.wiz-pending__item .icon { color: var(--text-2); }
+.wiz-pending__item[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 1px var(--primary); }
+.wiz-pending__item[aria-checked="true"] .icon { color: var(--primary-text); }
+.wiz-pending__text { display: flex; flex-direction: column; min-width: 0; }
+.wiz-pending__code { font-size: var(--fs-xl); font-weight: var(--fw-bold); letter-spacing: .06em; }
+.wiz-pending__note:empty { display: none; }
+.wiz-code { font-family: var(--font-mono); font-size: var(--fs-xl); letter-spacing: .12em; max-width: 220px; }
