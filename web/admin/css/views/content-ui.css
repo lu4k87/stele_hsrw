@@ -1,0 +1,182 @@
+/* Gemeinsame Bausteine des Bereichs „Inhalte“ (Präfix cu-):
+   Vorschaubilder, Info-Folien-Miniatur, Upload-Panel, Sortieren, Live-Vorschau, Farbvorschläge,
+   Inhalts- und Icon-Auswahl. Geladen von js/ui/content-common.js (useStyles). Nur Tokens. */
+
+/* ---------- Vorschau eines Inhalts (Karte, Zeile) ---------- */
+.cu-thumb {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--surface-3); color: var(--text-2);
+}
+.cu-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cu-thumb--contain img { object-fit: contain; background: #000; }
+.cu-thumb > .icon { width: 32px; height: 32px; }
+.cu-thumb__state {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3); text-align: center; font-size: var(--fs-sm); color: var(--text-2);
+}
+.cu-thumb__state--error { color: var(--danger); }
+.cu-thumb__state .progress { width: min(140px, 80%); }
+.cu-thumb--sm > .icon { width: 20px; height: 20px; }
+.cu-thumb--sm .cu-thumb__state { padding: 2px; }
+.cu-thumb--sm .cu-thumb__state span:not(.spinner) { display: none; }
+
+/* Webseite: Globus + Domain */
+.cu-web {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2);
+  width: 100%; height: 100%; padding: var(--sp-3);
+  background: var(--primary-soft); color: var(--primary-text); text-align: center;
+}
+.cu-web .icon { width: 36px; height: 36px; }
+.cu-web__domain { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text); overflow-wrap: anywhere; }
+.cu-thumb--sm .cu-web { padding: 2px; }
+.cu-thumb--sm .cu-web .icon { width: 20px; height: 20px; }
+.cu-thumb--sm .cu-web__domain { display: none; }
+
+/* Info-Folie als Miniatur (Farben aus den Inhaltsdaten, gesetzt per style) */
+.cu-textmini {
+  --tm-bg: #0F2747; --tm-fg: #FFFFFF; --tm-accent: #F5B400;
+  position: relative; width: 100%; height: 100%;
+  display: flex; flex-direction: column; justify-content: center; gap: 6%;
+  padding: 10% 9%;
+  background: var(--tm-bg); color: var(--tm-fg); overflow: hidden;
+  background-size: cover; background-position: center;
+}
+.cu-textmini::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--tm-overlay, 0)); }
+.cu-textmini > * { position: relative; }
+.cu-textmini--center { align-items: center; text-align: center; }
+.cu-textmini__rule { width: 28%; height: 4px; border-radius: 2px; background: var(--tm-accent); flex: none; }
+.cu-textmini__title {
+  font-weight: var(--fw-bold); font-size: clamp(11px, 9cqw, 20px); line-height: 1.2;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: anywhere;
+}
+.cu-textmini__line { height: 5px; border-radius: 3px; background: currentColor; opacity: .45; flex: none; }
+.cu-textmini__line:nth-of-type(odd) { width: 86%; }
+.cu-textmini__line:nth-of-type(even) { width: 64%; }
+.cu-textmini { container-type: inline-size; }
+.cu-thumb--sm .cu-textmini { padding: 12% 10%; gap: 8%; }
+.cu-thumb--sm .cu-textmini__title { display: none; }
+.cu-thumb--sm .cu-textmini__line { height: 3px; }
+
+/* Rahmen für Hochformat-Vorschaubilder in Listen */
+.cu-portrait {
+  flex: none; width: 40px; aspect-ratio: 9 / 16; border-radius: var(--r-sm); overflow: hidden;
+  border: 1px solid var(--border); background: var(--surface-3);
+}
+
+/* ---------- Verwendungen ---------- */
+.cu-usages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.cu-usages li { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.cu-usages li > .icon { color: var(--text-2); width: 18px; height: 18px; }
+.cu-usages a { overflow-wrap: anywhere; }
+
+/* ---------- Upload-Panel ---------- */
+.cu-upload { border: 1px solid var(--primary-soft-border); background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+.cu-upload__head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border);
+}
+.cu-upload__title { font-weight: var(--fw-semibold); display: flex; align-items: center; gap: var(--sp-2); }
+.cu-upload__list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.cu-upload__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px var(--sp-3); align-items: center;
+  padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--border);
+}
+.cu-upload__row:last-child { border-bottom: 0; }
+.cu-upload__name { font-weight: var(--fw-medium); }
+.cu-upload__state { font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.cu-upload__state .icon { width: 16px; height: 16px; }
+.cu-upload__row .progress { grid-column: 1 / -1; height: 6px; }
+.cu-upload__row.is-done .cu-upload__state { color: var(--success); }
+.cu-upload__row.is-error .cu-upload__state { color: var(--danger); white-space: normal; }
+.cu-upload__msg { grid-column: 1 / -1; font-size: var(--fs-sm); color: var(--danger); }
+
+/* ---------- Sortieren (Drag & Drop) ---------- */
+.cu-grip {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; min-height: 40px; padding: 0;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text-2);
+  cursor: grab; touch-action: none;
+}
+.cu-grip:hover { background: var(--surface-3); color: var(--text); }
+.cu-grip:disabled { cursor: default; opacity: .4; }
+.cu-sorting, .cu-sorting * { cursor: grabbing !important; user-select: none; }
+.cu-dragging { position: relative; z-index: 2; box-shadow: var(--shadow-md); background: var(--surface); outline: 2px solid var(--primary); outline-offset: -2px; opacity: .96; }
+
+/* ---------- Live-Vorschau ---------- */
+.cu-preview { display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; min-width: 0; }
+.cu-preview { --pv-h: max(300px, min(var(--cu-preview-h, 640px), calc(100vh - 220px))); }
+.cu-preview .player-frame { width: min(100%, calc(var(--pv-h) * 9 / 16)); height: auto; }
+.cu-preview__status { min-height: 22px; font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; text-align: center; }
+.cu-preview__status .icon { width: 16px; height: 16px; }
+.cu-preview__status.is-error { color: var(--danger); }
+
+/* ---------- Farbwahl mit Vorschlägen ---------- */
+.cu-color { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.cu-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.cu-swatch {
+  width: 32px; height: 32px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--border-strong); background: var(--sw);
+  box-shadow: inset 0 0 0 2px var(--surface);
+}
+.cu-swatch[aria-pressed="true"] { outline: 3px solid var(--primary); outline-offset: 1px; }
+@media (pointer: coarse) { .cu-swatch { width: 40px; height: 40px; } }
+
+/* ---------- Inhalts-Auswahl (Dialog) ---------- */
+.cu-picker { display: flex; flex-direction: column; gap: var(--sp-4); min-height: 0; }
+.cu-picker__grid {
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+}
+.cu-pick {
+  position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0; text-align: left;
+  border: 2px solid var(--border); border-radius: var(--r); background: var(--surface); overflow: hidden;
+}
+.cu-pick:hover { border-color: var(--border-strong); }
+.cu-pick[aria-checked="true"], .cu-pick[aria-pressed="true"] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.cu-pick__media { display: block; aspect-ratio: 3 / 4; width: 100%; overflow: hidden; }
+.cu-pick__body { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-2) var(--sp-3); min-width: 0; }
+.cu-pick__title { font-weight: var(--fw-medium); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cu-pick__meta { font-size: var(--fs-sm); color: var(--text-2); display: flex; align-items: center; gap: 4px; }
+.cu-pick__meta .icon { width: 14px; height: 14px; }
+.cu-pick__check {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 2px solid var(--border-strong); color: transparent;
+}
+.cu-pick[aria-checked="true"] .cu-pick__check, .cu-pick[aria-pressed="true"] .cu-pick__check { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.cu-pick__check .icon { width: 16px; height: 16px; }
+.cu-picker__foot { font-size: var(--fs-sm); color: var(--text-2); }
+
+/* ---------- Icon-Auswahl ---------- */
+.cu-icons { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr)); }
+.cu-icon-opt {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 84px; padding: var(--sp-2); border: 2px solid var(--border); border-radius: var(--r);
+  background: var(--surface); color: var(--text); font-size: var(--fs-sm); text-align: center;
+}
+.cu-icon-opt:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.cu-icon-opt[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-text); }
+.cu-icon-opt .icon { width: 28px; height: 28px; }
+
+/* ---------- Kleinteile ---------- */
+.cu-inline-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.cu-inline-row { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.cu-inline-row > .input { flex: 1 1 auto; min-width: 0; }
+.cu-selected {
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+  padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface-2);
+}
+.cu-selected__thumb { width: 48px; aspect-ratio: 3 / 4; border-radius: var(--r-sm); overflow: hidden; flex: none; border: 1px solid var(--border); }
+.cu-selected__text { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; }
+.cu-selected__title { font-weight: var(--fw-medium); overflow-wrap: anywhere; }
+.cu-selected__meta { font-size: var(--fs-sm); color: var(--text-2); }
+.cu-range { display: flex; align-items: center; gap: var(--sp-3); }
+.cu-range input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: var(--primary); height: 32px; }
+.cu-range output { min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+.cu-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.cu-picker .toolbar .select { width: auto; flex: 0 1 200px; min-width: 150px; }
+@media (max-width: 560px) {
+  .cu-picker__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+  .cu-picker .toolbar .select { flex: 1 1 140px; }
+}

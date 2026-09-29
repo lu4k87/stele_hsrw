@@ -1,0 +1,89 @@
+/* Präsentations-Editor (Präfix pe-). Nur Tokens.
+   Layout: ≥ 1400 px drei Spalten (Folien | Vorschau | Eigenschaften), 900–1399 px zwei Spalten
+   (Folien | Vorschau, Eigenschaften darunter), schmaler gestapelt. */
+
+.pe-page { gap: var(--sp-5); }
+.pe-page .page-header { align-items: flex-start; }
+
+/* Name inline bearbeiten */
+.pe-name { display: inline-flex; min-width: 0; }
+.pe-name__btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0;
+  padding: 2px 6px; margin-left: -6px; border: 1px solid transparent; border-radius: var(--r);
+  background: none; font: inherit; color: inherit; text-align: left;
+}
+.pe-name__btn span:first-child { overflow-wrap: break-word; } /* ohne min-width: 0, sonst bricht der Name mitten im Wort */
+.pe-name__btn .icon { color: var(--text-2); flex: none; opacity: .8; }
+.pe-name__btn:hover { border-color: var(--border-strong); background: var(--surface); }
+.pe-name__input { font-size: var(--fs-xl); font-weight: var(--fw-semibold); min-width: min(420px, 70vw); }
+.pe-status { display: inline-flex; }
+
+/* Speicherstatus */
+.pe-save { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--text-2); min-height: 24px; flex-wrap: wrap; }
+.pe-save .spinner { width: 14px; height: 14px; border-width: 2px; }
+.pe-save--saved { color: var(--success); }
+.pe-save--error { color: var(--danger); font-weight: var(--fw-medium); }
+.pe-save .btn--link { font-size: var(--fs-sm); color: var(--danger); }
+
+/* ---------- Raster ---------- */
+.pe-layout { display: grid; gap: var(--sp-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) {
+  .pe-layout { grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); grid-template-areas: "list stage" "props props"; }
+  .pe-list { grid-area: list; }
+  .pe-stage { grid-area: stage; position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); }
+  .pe-props { grid-area: props; }
+}
+@media (min-width: 1400px) {
+  .pe-layout { grid-template-columns: minmax(300px, 380px) minmax(280px, 1fr) minmax(340px, 440px); grid-template-areas: "list stage props"; }
+  .pe-props { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); max-height: calc(100vh - var(--topbar-h) - var(--sp-8)); display: flex; flex-direction: column; }
+  .pe-props > .card__body { overflow-y: auto; min-height: 0; }
+}
+
+/* ---------- Folienliste ---------- */
+.pe-list .card__header { padding: var(--sp-3) var(--sp-4); }
+.pe-list .card__title span { font-variant-numeric: tabular-nums; }
+.pe-list { container-type: inline-size; }
+.pe-items { list-style: none; margin: 0; padding: var(--sp-2); display: flex; flex-direction: column; gap: 4px; }
+.pe-item {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
+  padding: 4px; border: 1px solid transparent; border-radius: var(--r);
+  background: var(--surface);
+}
+.pe-item:hover { background: var(--surface-hover); }
+.pe-item.is-selected { border-color: var(--primary); background: var(--primary-soft); }
+.pe-item.is-off .cu-portrait { opacity: .5; }
+.pe-item__main {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--sp-2);
+  padding: 2px 4px; border: 0; background: none; text-align: left; border-radius: var(--r-sm); color: var(--text);
+}
+.pe-item__num { flex: none; width: 22px; text-align: right; font-size: var(--fs-sm); color: var(--text-2); font-weight: var(--fw-semibold); }
+.pe-item .cu-portrait { width: 36px; }
+.pe-item__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.pe-item__title { font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-item__meta { font-size: var(--fs-sm); color: var(--text-2); }
+.pe-item__chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.pe-item__switch { flex: none; padding: 4px; }
+@container (max-width: 380px) { .pe-item__num { display: none; } .pe-item__main { padding-left: 0; } }
+.pe-item .btn--icon.btn--sm { flex: none; }
+
+/* ---------- Vorschau ---------- */
+.pe-stage .card__header { padding: var(--sp-3) var(--sp-4); }
+.pe-stage .card__body { padding: var(--sp-4); }
+.pe-stage .cu-preview { --pv-h: max(300px, min(620px, calc(100vh - 330px))); }
+.pe-stage__nav { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); }
+.pe-stage__pos { min-width: 120px; text-align: center; font-size: var(--fs-sm); color: var(--text-2); }
+.pe-stage__empty { text-align: center; padding: var(--sp-8) 0; }
+
+/* ---------- Eigenschaften ---------- */
+.pe-props__tabs { padding: var(--sp-2) var(--sp-4) 0; border-bottom: 0; }
+.pe-props__tabs .tabs__tab { padding: 0 var(--sp-3); }
+.pe-props > .card__body { padding-top: 0; }
+.pe-props .tabs__panel:focus-visible { outline-offset: -2px; }
+.pe-props__head { display: flex; gap: var(--sp-3); align-items: flex-start; }
+.pe-props__head .cu-portrait { width: 48px; }
+.pe-props__headtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pe-props__title { overflow-wrap: anywhere; }
+.pe-props .form-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.pe-note { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-3); border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-size: var(--fs-sm); }
+.pe-note .icon { flex: none; margin-top: 1px; }
+.pe-link { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fw-medium); width: fit-content; min-height: 32px; }

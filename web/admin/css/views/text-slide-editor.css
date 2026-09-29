@@ -1,0 +1,61 @@
+/* Info-Folien-Editor (Präfix ts-). Nur Tokens. */
+
+.ts-layout {
+  display: grid; gap: var(--sp-6); align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+}
+.ts-form { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
+.ts-side { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); min-width: 0; }
+@media (max-width: 1100px) {
+  .ts-layout { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: var(--sp-4); }
+  .ts-side .cu-preview { --pv-h: min(480px, calc(100vh - 200px)); }
+  .ts-side .card__body { padding: var(--sp-3); }
+}
+@media (max-width: 760px) {
+  .ts-layout { grid-template-columns: minmax(0, 1fr); }
+  .ts-side { position: static; }
+  .ts-side .cu-preview { --pv-h: min(520px, 75vh); }
+}
+
+.ts-savestate { font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
+.ts-savestate.is-dirty { color: var(--warning); font-weight: var(--fw-semibold); }
+.ts-savestate.is-dirty::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ts-usages { margin-top: var(--sp-2); }
+.ts-usages summary { cursor: pointer; color: var(--primary-text); font-weight: var(--fw-medium); min-height: 32px; display: flex; align-items: center; }
+.ts-usages .cu-usages { margin-top: var(--sp-2); }
+
+.ts-colors { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+
+/* ---------- Vorlagen-Karten ---------- */
+.ts-templates { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 118px), 1fr)); }
+.ts-tpl {
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0;
+  padding: var(--sp-2) var(--sp-2) var(--sp-3); text-align: left;
+  border: 2px solid var(--border); border-radius: var(--r-lg); background: var(--surface); color: var(--text);
+}
+.ts-tpl:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-hover); }
+.ts-tpl[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.ts-tpl:disabled { cursor: default; }
+.ts-tpl__label { font-weight: var(--fw-semibold); padding: 0 var(--sp-1); }
+.ts-tpl__desc { font-size: var(--fs-sm); color: var(--text-2); padding: 0 var(--sp-1); line-height: 1.35; overflow-wrap: anywhere; hyphens: auto; }
+.ts-tpl__label { overflow-wrap: anywhere; hyphens: auto; }
+
+/* Skizzen (dekorativ, feste Farben der Stelen-Standardvorlage) */
+.ts-sk {
+  display: flex; flex-direction: column; gap: 5px; justify-content: center;
+  aspect-ratio: 4 / 3; padding: 10px 12px; border-radius: var(--r);
+  background: #0F2747; color: #FFFFFF; overflow: hidden;
+}
+.ts-sk span { display: block; flex: none; border-radius: 2px; background: currentColor; opacity: .55; height: 4px; width: 80%; }
+.ts-sk .ts-sk__title { height: 8px; width: 70%; opacity: 1; }
+.ts-sk .ts-sk__rule { width: 24%; height: 3px; background: #F5B400; opacity: 1; }
+.ts-sk .short { width: 50%; }
+.ts-sk .center { align-self: center; }
+.ts-sk .ts-sk__img { height: 34%; width: 100%; background: linear-gradient(135deg, #5B8DD6, #2F6F4E); opacity: 1; border-radius: 3px; }
+.ts-sk .ts-sk__quote { width: 14px; height: 10px; background: #F5B400; opacity: 1; align-self: center; border-radius: 3px 3px 3px 0; }
+.ts-sk--statement { align-items: stretch; }
+.ts-sk .ts-sk__badge { width: 18px; height: 16px; background: #F5B400; opacity: 1; }
+.ts-sk .ts-sk__fact { width: 60%; position: relative; margin-left: 10px; }
+.ts-sk .ts-sk__fact::before { content: ""; position: absolute; left: -10px; top: -1px; width: 6px; height: 6px; border-radius: 50%; background: #F5B400; }
+.ts-sk .ts-sk__bullet { width: 66%; position: relative; margin-left: 10px; }
+.ts-sk .ts-sk__bullet::before { content: ""; position: absolute; left: -10px; top: -1px; width: 6px; height: 6px; background: #F5B400; }
