@@ -28,8 +28,11 @@ def role_permission_keys(conn, role_id: int) -> list[str]:
         "SELECT permission FROM role_permissions WHERE role_id = ?", (role_id,)).fetchall()]
 
 
-def load_user_from_session() -> None:
-    """before_request: Benutzer aus der Sitzung laden, Leerlauf und session_version prüfen."""
+def load_user_from_session(extend: bool = True) -> None:
+    """before_request: Benutzer aus der Sitzung laden, Leerlauf und session_version prüfen.
+
+    extend=False (z. B. Mediendateien): Leerlauf-Zähler nicht verlängern.
+    """
     from .permissions import effective
 
     g.user = None
@@ -51,7 +54,7 @@ def load_user_from_session() -> None:
         session.clear()
         g.session_expired = True
         return
-    if request.headers.get(BACKGROUND_HEADER) != "1":
+    if extend and request.headers.get(BACKGROUND_HEADER) != "1":
         session["la"] = now
     g.user = user
     g.perms = frozenset(effective(role_permission_keys(conn, user["role_id"]), bool(user["role_is_admin"])))

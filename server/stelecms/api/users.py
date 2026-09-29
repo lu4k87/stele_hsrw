@@ -112,8 +112,8 @@ def update_user(uid: int):
     role_change = role is not None and role["id"] != user["role_id"]
     deactivate = is_active is False and user["is_active"]
     if uid == me["id"] and role_change:
-        raise ApiError(403, "self_protection", "Die eigene Rolle kann nicht geändert werden. "
-                                               "Bitte eine andere Administratorin oder einen anderen Administrator fragen.")
+        raise ApiError(403, "self_protection", "Die eigene Rolle kann nicht geändert werden. Bitte eine andere "
+                                               "Administratorin oder einen anderen Administrator fragen.")
     if uid == me["id"] and deactivate:
         raise ApiError(403, "self_protection", "Das eigene Konto kann nicht deaktiviert werden.")
     if _is_active_admin(user) and (deactivate or (role_change and not role["is_admin"])):

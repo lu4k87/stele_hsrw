@@ -179,4 +179,3 @@ def update_profile():
                   entity_name=user["username"], details={"fields": sorted(k for k in changes if k != "updated_at")})
     g.user = authm.load_user(conn, user["id"])
     return jsonify(authm.session_payload(conn))
-

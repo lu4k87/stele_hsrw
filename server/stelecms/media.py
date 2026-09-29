@@ -277,7 +277,8 @@ def video_compatible(info: dict) -> bool:
             and (info["acodec"] is None or info["acodec"] in BROWSER_AUDIO_CODECS))
 
 
-def run_ffmpeg_progress(cmd: list[str], duration: float | None, on_progress, timeout: float = 6 * 3600) -> tuple[int, str]:
+def run_ffmpeg_progress(cmd: list[str], duration: float | None, on_progress,
+                        timeout: float = 6 * 3600) -> tuple[int, str]:
     """ffmpeg mit `-progress pipe:1`; ruft on_progress(0..100) auf. Rückgabe (returncode, stderr)."""
     import threading
     import time

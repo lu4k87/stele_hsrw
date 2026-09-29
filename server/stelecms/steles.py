@@ -165,3 +165,32 @@ def compute_alerts(conn, cfg, resolver: Resolver, settings: dict | None = None) 
 
 def get_settings(conn) -> dict:
     return appsettings.get_settings(conn)
+
+
+# ------------------------------------------------------------ Stelen-Schlüssel
+
+KEY_COOKIE = "stele_key"
+KEY_HEADER = "X-Stele-Key"
+KEY_COOKIE_MAX_AGE = 10 * 365 * 24 * 3600
+
+
+def key_from_request() -> str:
+    from flask import request
+    key = request.headers.get(KEY_HEADER) or request.cookies.get(KEY_COOKIE) or ""
+    return key.strip()[:200]
+
+
+def stele_by_key(conn, key: str | None) -> dict | None:
+    if not key:
+        return None
+    return dbm.row(conn, "SELECT * FROM steles WHERE player_key = ?", (key,))
+
+
+def set_key_cookie(resp, key: str):
+    resp.set_cookie(KEY_COOKIE, key, max_age=KEY_COOKIE_MAX_AGE, httponly=True, samesite="Lax", path="/")
+    return resp
+
+
+def player_url(stele: dict) -> str:
+    from flask import request
+    return f"{request.host_url.rstrip('/')}/player/?key={stele['player_key']}"
