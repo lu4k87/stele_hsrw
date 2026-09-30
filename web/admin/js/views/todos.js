@@ -1,4 +1,4 @@
-// To-dos (#/todos): offene und geklärte Punkte der Content-Strategie (Stand: Papier von Caroline, 10.09.2026,
+// Diskussionspunkte (#/diskussionspunkte): offene und geklärte Punkte der Content-Strategie (Stand: Papier von Caroline, 10.09.2026,
 // inkl. Kommentare). Vorläufige, statische Übersicht – wird später wieder entfernt.
 import { h, useStyles } from '../dom.js';
 import { icon } from '../icons.js';
@@ -37,16 +37,23 @@ const DONE = [
   { text: 'Rubrik „Image“ (Erfolge, Projekte, Auszeichnungen)', result: 'Nötig – „Tu Gutes und sprich darüber“' },
   { text: 'Content-Loop und Folienzeit', result: 'Eingestellt: 7 s pro Folie (Vorschlag: Loop 60–90 s, Folie 5–7 s)' },
   { text: 'Zielgruppe', result: 'Externe Besucher, Hochschulangehörige, Studierende' },
+  { text: 'Automatisches Ablaufdatum', result: 'Im CMS: „Gültig von/bis“ je Folie + Hinweis in der Übersicht vor Ablauf' },
+  { text: 'Dezentral einreichen, zentral freigeben', result: 'Im CMS: Autor reicht ein, Rolle mit Veröffentlichungsrecht gibt frei oder lehnt ab' },
+  { text: 'Templates für eigene Folien', result: 'Im CMS: Info-Folien-Vorlagen (Veranstaltung, Liste, Aussage …)' },
+  { text: 'Pflichtangaben je Beitrag', result: 'Umgesetzt: Vorlage „Veranstaltung“ mit Für wen?, Datum, Uhrzeit, Ort, Eintritt' },
+  { text: 'QR-Codes auf Folien', result: 'Umgesetzt: Adresse eingeben → QR-Code wird auf der Info-Folie erzeugt' },
 ];
 
 const GUIDE = [
-  { title: 'Pflichtangaben', icon: 'check-circle', items: ['Für wen?', 'Wann?', 'Wo?', 'Worum geht es?', 'Eintritt frei'] },
+  { title: 'Pflichtangaben', icon: 'check-circle', items: [
+    { text: 'Für wen? · Wann? · Wo? · Worum geht es? · Eintritt frei', done: 'Vorlage „Veranstaltung“' },
+  ] },
   { title: 'Inhaltsgestaltung', icon: 'type', items: [
     '„3-Sekunden“-Visuals: Bilder, Icons, kurze Videos',
     'Max. ein prägnanter Satz pro Screen (Headline + max. 1–2 Stichpunkte)',
     'Große Typografie: lesbar aus 3–5 m und bei Sonnenlicht',
     'Keine feinen Schriftarten',
-    'QR-Codes groß genug, auf Augenhöhe (z. B. Anmeldung, Lageplan)',
+    { text: 'QR-Codes groß genug, auf Augenhöhe (z. B. Anmeldung, Lageplan)', done: 'QR-Code in Info-Folien' },
   ] },
   { title: 'Rubriken (Content-Mix)', icon: 'layers', items: [
     'Campus-Leben & Events: Hochschulsport, Partys, Gastvorträge, Karrieremessen, Ausstellungen',
@@ -56,8 +63,8 @@ const GUIDE = [
   ] },
   { title: 'Redaktionsprozess', icon: 'send', items: [
     'Zentral: Haupt-Inhalte automatisiert über Schnittstellen',
-    'Dezentral: Einheiten reichen Folien über Templates ein → zentrale Freigabe',
-    'Aktualität über automatisches Ablaufdatum pro Inhalt',
+    { text: 'Dezentral: Einheiten reichen Folien über Templates ein → zentrale Freigabe', done: 'Einreichen + Freigabe' },
+    { text: 'Aktualität über automatisches Ablaufdatum pro Inhalt', done: 'Gültig von/bis' },
   ] },
 ];
 
@@ -80,13 +87,20 @@ function openGroup(g) {
   );
 }
 
+// Vorgabe: Text oder { text, done } – done = wodurch erledigt
+function guideItem(it) {
+  if (typeof it === 'string') return h('li', {}, it);
+  return h('li', { class: 'td-bullets__done' },
+    h('span', {}, it.text), ' ', chip('success', `Erledigt: ${it.done}`, 'check', { size: 'sm' }));
+}
+
 export default async function mount(root) {
   await useStyles('/admin/css/views/todos.css');
   const openCount = OPEN.reduce((n, g) => n + g.items.length, 0);
 
   root.append(page({ wide: true },
     pageHeader({
-      title: 'To-dos',
+      title: 'Diskussionspunkte',
       description: 'Content-Strategie der Stele: offene und geklärte Punkte. Grundlage: Papier von Caroline (10.09.2026) mit Kommentaren.',
       meta: h('div', { class: 'cluster' },
         chip('warning', `${openCount} offen`, 'help-circle'),
@@ -94,10 +108,10 @@ export default async function mount(root) {
       ),
     }),
     h('div', { class: 'td-columns' },
-      card({ title: 'Offen', icon: 'help-circle', subtitle: 'Noch zu klären', className: 'td-open',
+      card({ title: 'Offen', icon: 'help-circle', subtitle: 'Noch zu klären', className: 'td-open tone-4',
         body: h('div', { class: 'td-groups' }, OPEN.map(openGroup)) }),
       h('div', { class: 'stack' },
-        card({ title: 'Geklärt', icon: 'check-circle', subtitle: 'Entschieden oder bereits umgesetzt',
+        card({ title: 'Geklärt', icon: 'check-circle', subtitle: 'Entschieden oder bereits umgesetzt', className: 'tone-2',
           body: h('ul', { class: 'td-list' }, DONE.map((it) => h('li', { class: 'td-item' },
             h('span', { class: 'td-item__mark td-item__mark--done' }, icon('check', { size: 18 })),
             h('div', { class: 'td-item__body' },
@@ -105,14 +119,14 @@ export default async function mount(root) {
               h('span', { class: 'td-item__note' }, it.result),
             ),
           ))) }),
-        card({ title: 'Rahmen', icon: 'info',
+        card({ title: 'Rahmen', icon: 'info', className: 'tone-1',
           body: h('ul', { class: 'td-bullets' }, CONTEXT.map((t) => h('li', {}, t))) }),
       ),
     ),
-    card({ title: 'Vorgaben pro Beitrag', icon: 'file-text', subtitle: 'Vorschlag aus dem Papier, noch nicht kommentiert',
+    card({ title: 'Vorgaben pro Beitrag', icon: 'file-text', subtitle: 'Vorschlag aus dem Papier; Umgesetztes ist markiert', className: 'tone-3',
       body: h('div', { class: 'td-guide' }, GUIDE.map((g) => h('section', { class: 'td-group' },
         h('h3', { class: 'td-group__title' }, icon(g.icon), g.title),
-        h('ul', { class: 'td-bullets' }, g.items.map((t) => h('li', {}, t))),
+        h('ul', { class: 'td-bullets' }, g.items.map(guideItem)),
       ))) }),
   ));
 }
