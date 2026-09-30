@@ -1,0 +1,12 @@
+# Einheitliche Zeilenenden (LF) auf allen Rechnern; Binärdateien unangetastet
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
+*.woff2 binary

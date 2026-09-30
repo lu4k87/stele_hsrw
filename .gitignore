@@ -5,3 +5,11 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.log
+
+# Editor, Betriebssystem, lokale Werkzeug-Einstellungen
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+.claude/settings.local.json

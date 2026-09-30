@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Vor jedem Commit: keine Laufzeitdaten einchecken; bei Änderungen am Server laufen die Tests.
+# Einmalig aktivieren: git config core.hooksPath .githooks   ·   Überspringen: git commit --no-verify
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if grep -qE '^(data|\.venv)/|(^|/)secret_key$|\.(db|sqlite3?)$' <<<"$staged"; then
+  echo "pre-commit: Laufzeitdaten im Commit (data/, .venv/, Datenbank, secret_key) – bitte aus dem Commit nehmen." >&2
+  exit 1
+fi
+
+if grep -qE '^(server/|requirements)' <<<"$staged"; then
+  if [ -x .venv/bin/python ] && .venv/bin/python -c "import pytest" 2>/dev/null; then
+    .venv/bin/python -m pytest server/tests -q
+  else
+    echo "pre-commit: pytest fehlt in .venv – Tests übersprungen (siehe README, Abschnitt Tests)." >&2
+  fi
+fi
