@@ -73,6 +73,7 @@ CMS_STELE_KIOSK/
 |---|---|---|
 | `/` | Weiterleitung auf `/admin/` | – |
 | `/admin/` | Admin-SPA (`web/admin/index.html`, statische Dateien darunter) | öffentlich (Login in der SPA) |
+| `/admin/show-stele-index.html` | Vorführseite (§11.1) | öffentlich; Daten nur mit Sitzung |
 | `/shared/…` | `web/shared/` (z. B. `icons.js`) | öffentlich |
 | `/player/` | Player (`web/player/index.html`), `/player/sw.js` (Scope `/player/`) | öffentlich; Daten nur mit Stelen-Schlüssel |
 | `/api/…` | Admin-API | Sitzung |
@@ -848,6 +849,7 @@ Server: `last_seen_at`, `last_state` aktualisieren; Online-Segment verlängern (
   - **Verwaltung:** Benutzer `#/users` · Rollen & Rechte `#/roles` · Protokoll `#/audit` · Einstellungen `#/settings`
   - Benutzer-Menü: Profil `#/profile`, Passwort ändern, Hell/Dunkel, Abmelden.
 - Seitenaufbau einheitlich: Kopf (Titel, ein Satz Beschreibung, Hauptaktion rechts, Nebenaktionen), darunter Werkzeugleiste (Suche/Filter), dann Inhalt.
+- **Vorführseite** `show-stele-index.html` → `js/show.js` (+ `js/show/*.js`, `css/views/show.css`): eigene Seite ohne Shell, gleiche Sitzung und Bausteine. Anmeldung über die Schnellanmeldung (nur Testbetrieb/Loopback) oder die Admin-Oberfläche. Abschnitte: (1) Rundgang – Kennzahlen, Karten je Bereich mit Stichpunkten und Link (neuer Tab; ohne Recht ausgeblendet), „Stele simulieren“ (Player-Vorschau einer Präsentation, Diashow oder Touch); (2) Info-Folie anlegen – Vorlage, Texte, Farben, Live-Vorschau; Ziel neue oder bestehende Präsentation, optional veröffentlichen (Recht `presentations.publish`); nutzt nur die bestehenden Endpunkte (§7.4, §7.5, §7.5a); Angelegtes wird im Tab gemerkt (`sessionStorage`) und lässt sich mit Bestätigung wieder löschen; (3) UI-Bausteine – Knöpfe, Status, Formulare, Toasts, Dialoge, Tabelle, Diagramme mit Beispieldaten (speichert nichts).
 
 ### 11.2 UX-Regeln (verbindlich)
 - ISO 9241-110 (Aufgabenangemessenheit, Selbstbeschreibung, Erwartungskonformität, Fehlertoleranz, Steuerbarkeit), WCAG 2.2 AA.

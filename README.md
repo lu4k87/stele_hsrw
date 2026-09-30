@@ -92,6 +92,8 @@ cd stele_hsrw
 
 - Erster Start legt `.venv` an und installiert die Abhängigkeiten
 - Admin-Oberfläche: <http://127.0.0.1:8090/admin/>
+- Vorführseite: <http://127.0.0.1:8090/admin/show-stele-index.html> – Rundgang durch alle Bereiche,
+  Info-Folie samt Präsentation in einem Schritt anlegen (mit Live-Vorschau und Player), alle UI-Bausteine ausprobieren
 - Player-Link der Stele: steht im Startprotokoll und im CMS unter **Stelen → Verbindung**
 - Neue Datenbank erhält Demo-Inhalte (abschaltbar, siehe Konfiguration)
 

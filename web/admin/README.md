@@ -15,6 +15,7 @@ Vanilla-JS-SPA ohne Build. Einstieg `index.html` → `js/main.js`. Fachlicher Ve
 | `js/dom.js`, `format.js`, `icons.js` | Helfer |
 | `js/ui/*.js` | Komponenten (s. u.) |
 | `js/views/*.js` | Ansichten (eine Datei je Route aus `routes.js`) |
+| `show-stele-index.html`, `js/show.js`, `js/show/*.js`, `css/views/show.css` | Vorführseite: Rundgang, Info-Folie + Präsentation anlegen, Galerie aller Bausteine (SPEC §11.1) |
 
 ## Ansicht (View) – Vertrag
 ```js
