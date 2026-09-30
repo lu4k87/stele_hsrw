@@ -96,6 +96,8 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 #### Info-Folien
 
 - Fünf Vorlagen: Titel und Text, Bild und Text, Aussage, Veranstaltung, Liste
+- Veranstaltung mit Pflichtangaben: Für wen?, Datum, Uhrzeit, Ort, Eintritt
+- QR-Code auf jeder Info-Folie: Adresse eingeben, der Code wird erzeugt (z. B. Anmeldung, Lageplan)
 - Farben mit Vorschlägen, Hintergrundbild mit Abdunklung, Ausrichtung, Schriftgröße
 - Live-Vorschau im Hochformat, auf Wunsch mit Header und Footer eines Designs
 

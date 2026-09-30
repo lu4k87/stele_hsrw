@@ -92,6 +92,35 @@ def test_text_content_create_update_duplicate(admin):
     assert admin.get(f"/api/contents/{img['id']}").get_json()["usages"][0]["type"] == "content"
 
 
+def test_text_event_audience_admission_qr(admin):
+    c = make_text(admin, "Vortrag", template="event", fields={
+        "title": "Vortrag", "audience": "Alle Interessierten", "admission": "Eintritt frei",
+        "qr_url": "https://example.com/anmeldung", "qr_label": "Anmeldung"})
+    f = c["data"]["fields"]
+    assert (f["audience"], f["admission"], f["qr_url"], f["qr_label"]) == (
+        "Alle Interessierten", "Eintritt frei", "https://example.com/anmeldung", "Anmeldung")
+    r = admin.patch(f"/api/contents/{c['id']}", json={"data": {"fields": {"qr_url": "keine-adresse"}}})
+    assert r.status_code == 422 and "data.fields.qr_url" in r.get_json()["error"]["fields"]
+    r = admin.patch(f"/api/contents/{c['id']}", json={"data": {"fields": {"qr_url": "https://x.de/" + "a" * 500}}})
+    assert r.status_code == 422 and "data.fields.qr_url" in r.get_json()["error"]["fields"]
+    r = admin.patch(f"/api/contents/{c['id']}", json={"data": {"fields": {"qr_url": ""}}})
+    assert r.status_code == 200 and r.get_json()["data"]["fields"]["qr_url"] == ""
+    # Leere neue Felder fehlen im Manifest (veröffentlichte Stände bleiben gleich), gefüllte sind enthalten
+    plain = make_text(admin, "Ohne")
+    p = make_presentation(admin, "M", content_ids=[plain["id"], c["id"]], publish=True)
+    m = admin.get(f"/api/presentations/{p['id']}/manifest").get_json()
+    slides = m["presentations"][str(p["id"])]["slides"]
+    assert "qr_url" not in slides[0]["fields"] and "audience" not in slides[0]["fields"]
+    assert slides[1]["fields"]["admission"] == "Eintritt frei"
+    assert admin.get(f"/api/presentations/{p['id']}").get_json()["status"] == "published"
+
+
+def test_text_new_fields_forbidden_for_viewer(admin, betrachter):
+    c = make_text(admin, "Info")
+    r = betrachter.patch(f"/api/contents/{c['id']}", json={"data": {"fields": {"qr_url": "https://x.de"}}})
+    assert r.status_code == 403
+
+
 def test_web_content_with_client_check(admin):
     r = admin.post("/api/contents", json={"type": "web", "title": "Seite", "data": {
         "url": "https://example.com", "zoom": 1.5,

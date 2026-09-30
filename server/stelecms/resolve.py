@@ -159,7 +159,8 @@ class Resolver:
                       "page_duration_s": opts.get("page_duration_s") or base})
         elif t == "text":
             d = schemas.merge_defaults(schemas.TEXT_DATA, data)
-            fields = dict(d["fields"])
+            fields = {k: v for k, v in d["fields"].items()
+                      if k not in schemas.TEXT_OPTIONAL_FIELDS or v}
             fields["image_url"] = self.image_url(fields.get("image_content_id"))
             style = dict(d["style"])
             style["bg_image_url"] = self.image_url(style.get("bg_image_content_id"))

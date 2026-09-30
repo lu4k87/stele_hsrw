@@ -16,7 +16,7 @@ import { livePreview } from '../ui/live-preview.js';
 
 const DEFAULT_DATA = {
   template: 'title_text',
-  fields: { title: '', subtitle: '', body: '', image_content_id: null, date: '', time: '', location: '', items: [] },
+  fields: { title: '', subtitle: '', body: '', image_content_id: null, date: '', time: '', location: '', items: [], audience: '', admission: '', qr_url: '', qr_label: '' },
   style: { bg_color: '#0F2747', text_color: '#FFFFFF', accent_color: '#F5B400', bg_image_content_id: null, overlay: 0.4, align: 'left', size: 'm' },
 };
 
@@ -33,19 +33,19 @@ const FIELDS = {
   title_text: ['title', 'subtitle', 'body'],
   image_text: ['image_content_id', 'title', 'subtitle', 'body'],
   statement: ['title', 'subtitle', 'body'],
-  event: ['title', 'subtitle', 'date', 'time', 'location', 'body'],
+  event: ['title', 'subtitle', 'audience', 'date', 'time', 'location', 'admission', 'body'],
   list: ['title', 'subtitle', 'items', 'body'],
 };
 const LABELS = {
   title_text: { title: 'Überschrift', subtitle: 'Unterzeile', body: 'Text' },
   image_text: { title: 'Überschrift', subtitle: 'Unterzeile', body: 'Text', image_content_id: 'Bild' },
   statement: { title: 'Aussage oder Zitat', subtitle: 'Quelle / Person', body: 'Ergänzender Text' },
-  event: { title: 'Name der Veranstaltung', subtitle: 'Rubrik', body: 'Beschreibung', date: 'Datum', time: 'Uhrzeit', location: 'Ort' },
+  event: { title: 'Name der Veranstaltung', subtitle: 'Rubrik', body: 'Beschreibung', date: 'Datum', time: 'Uhrzeit', location: 'Ort', audience: 'Für wen?', admission: 'Eintritt' },
   list: { title: 'Überschrift', subtitle: 'Unterzeile', items: 'Aufzählungspunkte', body: 'Text unter der Liste' },
 };
 const HINTS = {
   statement: { subtitle: 'Wird als „— Quelle“ angezeigt.' },
-  event: { subtitle: 'z. B. Vortrag, Führung, Konzert', time: 'z. B. 18:00 oder 18:00–20:00', location: 'z. B. Großer Saal, 2. OG' },
+  event: { subtitle: 'z. B. Vortrag, Führung, Konzert', time: 'z. B. 18:00 oder 18:00–20:00', location: 'z. B. Großer Saal, 2. OG', audience: 'z. B. Studierende, alle Interessierten', admission: 'z. B. Eintritt frei' },
   list: { items: 'Ein Punkt pro Zeile. Kurz halten – max. 8 Punkte sind gut lesbar.' },
   image_text: { image_content_id: 'Am besten ein Bild im Querformat (z. B. 1920 × 1080).' },
 };
@@ -189,13 +189,17 @@ export default async function mount(root, ctx) {
       }
       return field({
         label, name: `fields.${key}`, hint: hints[key], required: key === 'title', optional: key !== 'title',
-        control: input({ value: f[key] || '', maxLength: key === 'title' ? 200 : 160, disabled: ro, onInput: (v) => { f[key] = v; changed(); } }),
+        control: input({ value: f[key] || '', maxLength: key === 'title' ? 200 : (['audience', 'admission'].includes(key) ? 120 : 160), disabled: ro, onInput: (v) => { f[key] = v; changed(); } }),
       });
     });
     const keep = document.activeElement && fieldsBox.contains(document.activeElement);
     fill(fieldsBox, ...nodes);
     if (keep) fieldsBox.querySelector('input, textarea, button')?.focus();
   }
+
+  // ---------- QR-Code (alle Vorlagen) ----------
+  const qrUrlIn = input({ type: 'url', value: data.fields.qr_url || '', maxLength: 500, placeholder: 'https://…', disabled: ro, onInput: (v) => { data.fields.qr_url = v.trim(); changed(); } });
+  const qrLabelIn = input({ value: data.fields.qr_label || '', maxLength: 80, disabled: ro, onInput: (v) => { data.fields.qr_label = v; changed(); } });
 
   // ---------- Gestaltung ----------
   const s = data.style;
@@ -269,6 +273,7 @@ export default async function mount(root, ctx) {
     const errs = {};
     if (!String(f.title || '').trim()) errs['fields.title'] = 'Bitte eine Überschrift eingeben.';
     if (data.template === 'image_text' && !f.image_content_id) errs['fields.image_content_id'] = 'Bitte ein Bild auswählen.';
+    if (f.qr_url && !/^https?:\/\/\S+$/i.test(f.qr_url)) errs['fields.qr_url'] = 'Bitte eine Adresse eingeben, die mit http:// oder https:// beginnt.';
     if (Object.keys(errs).length) { setFieldErrors(formRoot, errs); toast.error('Bitte die markierten Felder prüfen.'); return; }
     const payload = { title: (title.trim() || String(f.title).trim().split('\n')[0]).slice(0, 120), tags, data: clone(data) };
     saving = true;
@@ -336,6 +341,9 @@ export default async function mount(root, ctx) {
       h('div', { class: 'form-section' },
         field({ label: 'Titel in der Mediathek', name: 'title', optional: true, hint: 'Leer = Überschrift wird verwendet.', control: titleIn }),
         field({ label: 'Schlagworte', name: 'tags', optional: true, control: tagsIn }))) }),
+    card({ title: 'QR-Code', icon: 'qr-code', subtitle: 'Für weiterführende Infos, z. B. Anmeldung oder Lageplan', body: h('div', { class: 'form' },
+      field({ label: 'Adresse', name: 'fields.qr_url', optional: true, hint: 'Leer = kein QR-Code. Kurze Adressen ergeben einen gröberen, besser scanbaren Code.', control: qrUrlIn }),
+      field({ label: 'Beschriftung', name: 'fields.qr_label', optional: true, hint: 'z. B. „Jetzt anmelden“', control: qrLabelIn })) }),
     card({ title: 'Gestaltung', icon: 'palette', body: h('div', { class: 'form' },
       h('div', { class: 'ts-colors' },
         field({ label: 'Hintergrundfarbe', name: 'style.bg_color', control: bgColor }),

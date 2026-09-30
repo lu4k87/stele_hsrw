@@ -368,7 +368,9 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
     "title": "", "subtitle": "", "body": "",       // body: Klartext, Zeilenumbrüche erlaubt
     "image_content_id": null,                     // Bild aus der Mediathek (image_text, optional sonst)
     "date": "", "time": "", "location": "",       // event
-    "items": []                                   // list: Array von Strings
+    "items": [],                                  // list: Array von Strings
+    "audience": "", "admission": "",              // event: „Für wen?“, „Eintritt“ (je max. 120)
+    "qr_url": "", "qr_label": ""                  // alle Vorlagen: QR-Code (http/https, max. 500) + Beschriftung (max. 80)
   },
   "style": {
     "bg_color": "#0F2747", "text_color": "#FFFFFF", "accent_color": "#F5B400",
@@ -740,6 +742,8 @@ Slide (gemeinsame Felder) = { "id": 11 (item_id), "content_id": 7, "type": "imag
   video: + { "src", "poster", "width", "height", "video_duration_s", "play_to_end": bool, "sound": bool }
   pdf:   + { "pages": ["/media/…/pages/p001.png", …], "page_duration_s": 8 }   // duration_s = Seiten × page_duration_s
   text:  + { "template", "fields": {…, "image_url"}, "style": {…, "bg_image_url"} }  // *_content_id → *_url aufgelöst
+         //   leere Felder audience, admission, qr_url, qr_label entfallen (veröffentlichte Stände bleiben gleich);
+         //   QR-Code erzeugt der Player selbst (web/shared/qr.js, Fehlerkorrektur M, dunkel auf weiß)
   web:   + { "url", "zoom", "refresh_s", "interactive" }
 
 Aufgelöste Touch-Kachel = { "id", "label", "icon", "color", "image_url": str|null,

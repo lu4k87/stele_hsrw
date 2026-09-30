@@ -36,10 +36,14 @@ TEXT_TEMPLATES = ("title_text", "image_text", "statement", "event", "list")
 TEXT_DATA = {
     "template": "title_text",
     "fields": {"title": "", "subtitle": "", "body": "", "image_content_id": None,
-               "date": "", "time": "", "location": "", "items": []},
+               "date": "", "time": "", "location": "", "items": [],
+               "audience": "", "admission": "", "qr_url": "", "qr_label": ""},
     "style": {"bg_color": "#0F2747", "text_color": "#FFFFFF", "accent_color": "#F5B400",
               "bg_image_content_id": None, "overlay": 0.4, "align": "left", "size": "m"},
 }
+# Neue optionale Felder: leer → nicht im Manifest (veröffentlichte Stände bleiben unverändert)
+TEXT_OPTIONAL_FIELDS = ("audience", "admission", "qr_url", "qr_label")
+QR_URL_MAX = 500
 WEB_DATA = {"url": "", "zoom": 1.0, "refresh_s": 0, "interactive": True,
             "embed_check": {"embeddable": None, "message": "", "checked_at": None}}
 VIDEO_DATA = {"codec": "", "audio": False, "transcoded": False, "compatible": True}
@@ -204,8 +208,13 @@ def normalize_text_data(conn, base, patch, v: Validator) -> dict:
         fields["title"] = f.text("title", max_len=200, default=fields["title"])
         fields["subtitle"] = f.text("subtitle", max_len=200, default=fields["subtitle"])
         fields["body"] = f.text("body", max_len=3000, default=fields["body"], multiline=True)
-        for key in ("date", "time", "location"):
+        for key in ("date", "time", "location", "audience", "admission"):
             fields[key] = f.text(key, max_len=120, default=fields[key])
+        fields["qr_url"] = f.url("qr_url", allow_empty=True, default=fields["qr_url"])
+        if len(fields["qr_url"]) > QR_URL_MAX:
+            f.error("qr_url", f"Die Adresse ist zu lang für einen QR-Code (höchstens {QR_URL_MAX} Zeichen).")
+            fields["qr_url"] = ""
+        fields["qr_label"] = f.text("qr_label", max_len=80, default=fields["qr_label"])
         items = f.string_list("items", max_items=20, max_len=200)
         if items is not None:
             fields["items"] = items

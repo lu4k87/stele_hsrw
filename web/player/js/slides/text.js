@@ -4,6 +4,7 @@
 import { h, clamp, readableTextColor, safeColor } from '../util.js';
 import { TEXT_STYLE_DEFAULTS, mergeDefaults } from '../config.js';
 import { iconSvg } from '/shared/icons.js';
+import { qrSvg } from '/shared/qr.js';
 import { baseView, durationMs, decodeImage, textParagraphs } from './common.js';
 import { fitBox } from './fit.js';
 
@@ -70,13 +71,25 @@ function buildEvent(f) {
     h('span', { class: 'tx-badge-month', text: monthShort.format(date).replace('.', '') })) : null;
   const top = badge || f.subtitle ? h('div', { class: 'tx-event-top' }, badge, el('p', 'tx-kicker', f.subtitle)) : null;
   const facts = [
+    ['users', String(f.audience || '').trim()],
     ['calendar', date ? dateLong.format(date) : String(f.date || '').trim()],
     ['clock', formatEventTime(f.time)],
     ['map-pin', String(f.location || '').trim()],
+    ['ticket', String(f.admission || '').trim()],
   ].filter(([, text]) => text);
   const list = facts.length ? h('ul', { class: 'tx-facts' }, facts.map(([icon, text]) => h('li', null,
     iconSvg(icon, { size: 48 }), h('span', { text })))) : null;
   return [top, el('h1', 'tx-title', f.title), list, bodyBlock(f.body)];
+}
+
+// QR-Code (alle Vorlagen): dunkel auf weiß mit Ruhezone, darunter optional eine Beschriftung.
+function buildQr(f) {
+  const url = String(f.qr_url || '').trim();
+  const svg = url ? qrSvg(url, { title: f.qr_label || 'QR-Code' }) : null;
+  if (!svg) return null;
+  return h('div', { class: 'tx-qr' },
+    h('div', { class: 'tx-qr-code' }, svg),
+    el('p', 'tx-qr-label', String(f.qr_label || '').trim()));
 }
 
 function buildList(f) {
@@ -130,7 +143,7 @@ export function buildTextSlide(slide) {
   else if (layout === 'event') children = buildEvent(f);
   else if (layout === 'list') children = buildList(f);
   else children = buildTitleText(f);
-  const content = h('div', { class: 'tx-content' }, children);
+  const content = h('div', { class: 'tx-content' }, children, buildQr(f));
   root.appendChild(content);
   const minK = clamp(MIN_BODY_PX / BODY_PX[size], 0.5, 1);
   return { root, content, images, minK };
