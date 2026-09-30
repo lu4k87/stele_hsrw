@@ -465,6 +465,7 @@ function runSlide() {
   listenAdmin(adminControls({
     render: (m) => player.render(m),
   }));
+  document.addEventListener('tx:fit', (e) => postToAdmin('player:fit', e.detail));
   postToAdmin('player:ready', { total: 0 });
 }
 

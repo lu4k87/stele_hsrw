@@ -146,19 +146,25 @@ export function buildTextSlide(slide) {
   const content = h('div', { class: 'tx-content' }, children, buildQr(f));
   root.appendChild(content);
   const minK = clamp(MIN_BODY_PX / BODY_PX[size], 0.5, 1);
-  return { root, content, images, minK };
+  return { root, content, images, minK, bodyPx: BODY_PX[size] };
+}
+
+// Fit-Ergebnis als DOM-Ereignis melden (Einzelfolien-Vorschau reicht es an den Editor weiter)
+function fit(root, content, minK, bodyPx) {
+  const k = fitBox(root, content, { min: minK });
+  root.dispatchEvent(new CustomEvent('tx:fit', { bubbles: true, detail: { body_px: Math.round(bodyPx * k), clipped: content.classList.contains('is-clipped') } }));
 }
 
 export function createTextSlide(slide, ctx) {
-  const { root, content, images, minK } = buildTextSlide(slide);
+  const { root, content, images, minK, bodyPx } = buildTextSlide(slide);
   const view = baseView(root);
   view.plannedMs = durationMs(slide, ctx.settings);
   view.load = async () => {
     // Fehlende Bilder blenden nur das Bild aus – die Folie bleibt lesbar.
     await Promise.all(images.map((img) => decodeImage(img, 10_000).catch(() => img.classList.add('is-missing'))));
-    fitBox(root, content, { min: minK });
+    fit(root, content, minK, bodyPx);
   };
-  view.refit = () => fitBox(root, content, { min: minK });
+  view.refit = () => fit(root, content, minK, bodyPx);
   view.destroy = () => {
     images.forEach((img) => img.removeAttribute('src'));
     root.remove();
