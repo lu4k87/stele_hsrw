@@ -26,13 +26,14 @@ WRITES = re.compile(r'\bsed\s+(-\w*\s+)*-i|\btee\b|\b(cp|mv|rm|rmdir|truncate)\s
 PROTECTED_IN_CMD = re.compile(r'(^|[\s"\'=])(\./)?(data|\.venv)/|/stele_hsrw/(data|\.venv)/|secret_key|\bcms\.db')
 VENV_EXE = re.compile(r'(\./)?\.venv/bin/\S+')  # Programmaufruf aus .venv ist kein Schreibzugriff
 GIT_RISKY = re.compile(r'\bgit\s+push\b[^;&|]*(--force\b|-f\b)|--no-verify\b|\bgit\s+add\s+(-A|--all|\.)(\s|$)')
+MESSAGE = re.compile(r'''(-m|--message)(\s+|=)("(?:[^"\\]|\\.)*"|'[^']*')''', re.S)  # Commit-Texte
 HEREDOC = re.compile(r'<<-?\s*([\'"]?)(\w+)\1')
 
 
 def strip_heredocs(cmd):
-    """Entfernt Heredoc-Inhalte (Text/Skripte für Dateien), damit Doku-Text keinen Alarm auslöst."""
+    """Entfernt Heredoc-Inhalte und Commit-Nachrichten, damit Text keinen Alarm auslöst."""
     out, end = [], None
-    for line in cmd.split('\n'):
+    for line in MESSAGE.sub(' ', cmd).split('\n'):
         if end is not None:
             if line.strip() == end:
                 end = None
