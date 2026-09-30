@@ -324,7 +324,8 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
   "offline_after_s": 45,
   "retention_days": 30,
   "default_design_id": null,
-  "default_slide_duration_s": 10
+  "default_slide_duration_s": 10,
+  "stale_after_days": 7
 }
 ```
 
@@ -695,7 +696,7 @@ Timeline-Antwort: `{timezone, days: [{date, weekday, segments: [{start: "HH:MM",
 |---|---|---|---|
 | GET | `/api/monitoring/overview` | monitoring.view | `{steles: [Stele + {availability_24h_pct, plays_today, touch_sessions_today, errors_24h}], server: {version, started_at, uptime_s, db_size_bytes, media_size_bytes, disk_free_bytes, disk_total_bytes, content_count, jobs: {queued, running, failed}}, alerts: [Alert]}` |
 | GET | `/api/monitoring/steles/<id>?hours=24` | monitoring.view | `{stele: Stele, availability: {pct, segments: [{start, end}]}, metrics: [{ts, cpu, ram, disk, temp}], playback: [{started_at, duration_s, title, content_type, presentation_name}], events: [{ts, level, kind, message}], touch: {sessions, avg_duration_s, top_tiles: [{label, count}], per_hour: [{hour, sessions}]}, screenshot: {url, taken_at}|null}` (Listen: neueste zuerst, max. 100) |
-| GET | `/api/dashboard` | angemeldet (Abschnitte nach Rechten, fehlende = `null`) | `{steles: [Stele]|null, reviews: [{presentation: {id, name}, requested_by: Person, requested_at, note}]|null, unpublished: [{id, name, updated_at, updated_by}]|null, expiring: [{presentation: {id, name}, item_id, title, valid_until}]|null (nächste 7 Tage), activity: [AuditEntry]|null (10, nur audit.view), alerts: [Alert], counts: {contents, presentations, steles, users}}` |
+| GET | `/api/dashboard` | angemeldet (Abschnitte nach Rechten, fehlende = `null`) | `{steles: [Stele]|null, reviews: [{presentation: {id, name}, requested_by: Person, requested_at, note}]|null, unpublished: [{id, name, updated_at, updated_by}]|null, expiring: [{presentation: {id, name}, item_id, title, valid_until}]|null (nächste 7 Tage), stale: [{id, name, published_at}]|null (auf Stelen eingeplant, länger als `stale_after_days` nicht veröffentlicht), stale_after_days, activity: [AuditEntry]|null (10, nur audit.view), alerts: [Alert], counts: {contents, presentations, steles, users}}` |
 | GET | `/api/audit?q=&user_id=&entity_type=&action=&from=&to=&limit=50&offset=0` | audit.view | `{items: [AuditEntry], total}` |
 | GET | `/api/audit/export.csv?…` | audit.view | CSV, `;`-getrennt, UTF-8 mit BOM |
 | GET | `/api/settings` | angemeldet (ohne settings.manage nur `org_name`, `timezone`, `default_slide_duration_s`) | Settings |
@@ -771,7 +772,7 @@ Läuft in Chrome (Kiosk) auf dem Stelen-PC und – als Vorschau – in iframes d
 
 ### 9.2 postMessage-API (nur gleiche Herkunft; Admin ↔ Player-iframe)
 Admin → Player: `{type:'goto', index}` · `{type:'next'}` · `{type:'prev'}` · `{type:'play'}` · `{type:'pause'}` · `{type:'reload'}` · `{type:'openTouch'}` · `{type:'closeTouch'}` · `{type:'render', slide: Slide, design: Design|null, settings: Diashow-Einstellungen|null, touch_menu: TouchMenu|null, view: 'slide'|'touch'}` · `{type:'showItem', item_id}` (mirror) · `{type:'setManifest', manifest}` (Vorschau mit ungespeichertem Stand).
-Player → Admin: `{type:'player:ready', total}` · `{type:'player:state', index, total, item_id, playing, mode}` · `{type:'player:error', message}`.
+Player → Admin: `{type:'player:ready', total}` · `{type:'player:state', index, total, item_id, playing, mode}` · `{type:'player:error', message}` · nur `mode=slide`: `{type:'player:fit', body_px, clipped}` (Fließtextgröße nach Fit-Text, Text abgeschnitten).
 Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 
 ### 9.3 Darstellung

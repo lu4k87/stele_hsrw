@@ -57,7 +57,7 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 ### Übersicht und Kopfleiste
 
 - Startseite: Zustand jeder Stele, was gerade läuft und der nächste Wechsel
-- Hinweise auf wartende Freigaben, unveröffentlichte Änderungen und ablaufende Folien
+- Hinweise auf wartende Freigaben, unveröffentlichte Änderungen, ablaufende Folien und Präsentationen, die länger nicht aktualisiert wurden (Tage in den Einstellungen)
 - Kopfleiste: Testbetrieb-Hinweis, Stelen-Status, Zoom 80–150 %, Hell/Dunkel, Benutzer-Menü
 
 ![Kopfleiste mit Testbetrieb, Stelen-Status, Zoom, Hell/Dunkel und Benutzer](docs/img/topbar.png)
@@ -98,6 +98,7 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 - Fünf Vorlagen: Titel und Text, Bild und Text, Aussage, Veranstaltung, Liste
 - Veranstaltung mit Pflichtangaben: Für wen?, Datum, Uhrzeit, Ort, Eintritt
 - QR-Code auf jeder Info-Folie: Adresse eingeben, der Code wird erzeugt (z. B. Anmeldung, Lageplan)
+- Lesbarkeit: Hinweis unter der Vorschau bei viel Text (über 30 Wörter), stark verkleinerter Schrift (unter 36 px) oder abgeschnittenem Text
 - Farben mit Vorschlägen, Hintergrundbild mit Abdunklung, Ausrichtung, Schriftgröße
 - Live-Vorschau im Hochformat, auf Wunsch mit Header und Footer eines Designs
 
@@ -112,6 +113,7 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 
 - Diashow aus Folien mit eigener Dauer, Übergang, Gültigkeitszeitraum und Bildunterschrift
 - Diashow-Einstellungen: Standarddauer, Reihenfolge, Übergänge, Bildanpassung, Videos, Fortschrittsbalken
+- Hinweis bei zu langem Durchlauf (über 90 s) und bei Bild- und Info-Folien über 7 s
 - **Design** (Rahmen) und **Touch-Menü** je Präsentation
 - Bearbeitet wird der Entwurf; an die Stele geht nur der **veröffentlichte** Stand
 - Freigabe: Autoren reichen ein, Redaktion veröffentlicht oder lehnt mit Begründung ab
