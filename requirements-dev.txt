@@ -1,2 +1,3 @@
 -r requirements.txt
 pytest>=7
+websocket-client>=1.6   # docs/screenshots.py (Chrome DevTools)

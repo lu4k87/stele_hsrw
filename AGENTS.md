@@ -26,7 +26,7 @@ Web-CMS für eine digitale Stele (Hochformat 1080 × 1920, Touch, Chrome im Kios
 | `web/shared/` | gemeinsame Icons | `icons.js` |
 | `stele_agent/` | Agent auf dem Stelen-PC (Zustand, Screenshots) | `stele_agent.py`, `README.md` |
 | `docs/SPEC.md` | Datenmodell, API, Manifest, Player-Vertrag, UX-Regeln | |
-| `docs/img/` | Screenshots der `README.md` | |
+| `docs/img/` | Screenshots der `README.md` | `docs/screenshots.py` |
 | `.githooks/pre-commit` | Prüfung vor dem Commit (Laufzeitdaten, Tests) | |
 | `data/` | Laufzeitdaten – nicht im Git | |
 
@@ -55,7 +55,7 @@ Web-CMS für eine digitale Stele (Hochformat 1080 × 1920, Touch, Chrome im Kios
 | `server/` | `.venv/bin/python -m pytest server/tests -q`; neue Funktion/Endpunkt → Test dazu (inkl. Rechte, 403) |
 | `web/admin/`, `web/player/` | Testinstanz + Headless Chrome (eigener CDP-Port, eigenes `--user-data-dir`): keine Konsolenfehler, kein waagrechtes Scrollen, Hell + Dunkel |
 | `stele_agent/` | Aufruf gegen eine Testinstanz, `stele_agent/README.md` aktuell |
-| Funktionen, Namen, Ports, Abläufe | `README.md`, `docs/SPEC.md`; Screenshots in `docs/img/` bei sichtbaren Änderungen erneuern |
+| Funktionen, Namen, Ports, Abläufe | `README.md`, `docs/SPEC.md`; Screenshots bei sichtbaren Änderungen erneuern: `.venv/bin/python docs/screenshots.py [abschnitt …]` |
 
 ### Commit + Push
 - **Nach jeder abgeschlossenen, geprüften Aufgabe** committen und pushen (ohne Nachfrage): nur eigene Dateien (`git commit -- <pfade>`), nie `--force`, nie `--no-verify` ohne Auftrag.

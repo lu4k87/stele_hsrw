@@ -338,7 +338,7 @@ Eigenes Administratorkonto und Passwörter auf der Kommandozeile:
 | `web/shared/` | gemeinsame Icons |
 | `stele_agent/` | Agent für den Stelen-PC |
 | `docs/SPEC.md` | Spezifikation (Datenmodell, API, Player-Vertrag, UX-Regeln) |
-| `docs/img/` | Screenshots für diese README |
+| `docs/img/` | Screenshots für diese README – erzeugt mit `docs/screenshots.py` |
 | `.githooks/` | Prüfung vor jedem Commit |
 | `AGENTS.md` | Arbeitsregeln für KI-Assistenten (Claude Code) |
 | `data/` | Laufzeitdaten – nicht im Git |
@@ -372,6 +372,21 @@ git push
 - **Nicht im Git:** `data/` (Datenbank, Medien, Schlüssel), `.venv/`, Editor-Einstellungen
 - **Zeilenenden:** `.gitattributes` hält alle Textdateien auf LF
 - **Web-Oberflächen:** kein Build – Browser neu laden genügt
+
+### Screenshots erneuern
+
+Nach sichtbaren Änderungen die Bilder in `docs/img/` neu erzeugen:
+
+```bash
+.venv/bin/python -m pip install -r requirements-dev.txt   # einmalig
+.venv/bin/python docs/screenshots.py                       # alle Bilder (ca. 6 Minuten)
+.venv/bin/python docs/screenshots.py media editor          # nur einzelne Abschnitte (--list zeigt alle)
+```
+
+- Startet eine eigene Testinstanz (Port 18095, Temp-Ordner), Chrome headless (de-DE), Player und Stelen-Agent
+- Legt Beispieldaten an (PDF, zweite Stele, Zeitplan-Eintrag, Touch-Nutzung) und räumt danach alles ab
+- Stelen-Schlüssel und lokale Pfade werden in den Bildern ersetzt; die eigene Instanz (8090, `data/`) bleibt unberührt
+- Braucht Chrome oder Chromium (sonst `CHROME=/pfad/zu/chrome`) und `ffmpeg`
 
 ## 8. Tests
 
