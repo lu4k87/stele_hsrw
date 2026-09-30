@@ -183,11 +183,22 @@
 .card__header {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-5);
-  border-bottom: 1px solid var(--tint-border);
-  background: var(--tint); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-bottom: 1px solid var(--sec-border, var(--tint-border));
+  background: var(--sec-bg, var(--tint)); border-radius: var(--r-lg) var(--r-lg) 0 0;
 }
+/* Section-Töne: Karten einer Gruppe rotieren durch 5 Töne; .tone-1 … .tone-5 legt einen Ton fest */
+.card:nth-of-type(5n+1) { --sec-bg: var(--sec-1); --sec-border: var(--sec-1-border); --sec-mark: var(--sec-1-mark); }
+.card:nth-of-type(5n+2) { --sec-bg: var(--sec-2); --sec-border: var(--sec-2-border); --sec-mark: var(--sec-2-mark); }
+.card:nth-of-type(5n+3) { --sec-bg: var(--sec-3); --sec-border: var(--sec-3-border); --sec-mark: var(--sec-3-mark); }
+.card:nth-of-type(5n+4) { --sec-bg: var(--sec-4); --sec-border: var(--sec-4-border); --sec-mark: var(--sec-4-mark); }
+.card:nth-of-type(5n+5) { --sec-bg: var(--sec-5); --sec-border: var(--sec-5-border); --sec-mark: var(--sec-5-mark); }
+.card.tone-1 { --sec-bg: var(--sec-1); --sec-border: var(--sec-1-border); --sec-mark: var(--sec-1-mark); }
+.card.tone-2 { --sec-bg: var(--sec-2); --sec-border: var(--sec-2-border); --sec-mark: var(--sec-2-mark); }
+.card.tone-3 { --sec-bg: var(--sec-3); --sec-border: var(--sec-3-border); --sec-mark: var(--sec-3-mark); }
+.card.tone-4 { --sec-bg: var(--sec-4); --sec-border: var(--sec-4-border); --sec-mark: var(--sec-4-mark); }
+.card.tone-5 { --sec-bg: var(--sec-5); --sec-border: var(--sec-5-border); --sec-mark: var(--sec-5-mark); }
 .card__title { font-size: var(--fs-md); font-weight: var(--fw-semibold); display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
-.card__title .icon { color: var(--mark); }
+.card__title .icon { color: var(--sec-mark, var(--mark)); }
 .card__subtitle { color: var(--text-2); font-size: var(--fs-sm); }
 .card__body { padding: var(--sp-5); }
 .card__body--flush { padding: 0; }
@@ -200,7 +211,7 @@
 .card--interactive:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
 
 /* Kennzahl-Kachel */
-.kpi { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-4) var(--sp-5); min-width: 0; border-top: 3px solid var(--mark); }
+.kpi { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-4) var(--sp-5); min-width: 0; border-top: 3px solid var(--sec-mark, var(--mark)); }
 .kpi__label { color: var(--text-2); font-size: var(--fs-sm); font-weight: var(--fw-medium); display: flex; align-items: center; gap: 6px; }
 .kpi__label .icon { width: 16px; height: 16px; }
 .kpi__value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; line-height: 1.2; }
@@ -338,7 +349,7 @@
 .section-title { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
 .section-title h2 { font-size: var(--fs-lg); display: flex; align-items: center; gap: var(--sp-2); }
 /* Akzentbalken vor Abschnittstiteln (Struktur-Tönung) */
-.section-title h2::before, .form-section__title::before { content: ""; flex: none; width: 4px; height: 1.05em; border-radius: 2px; background: var(--mark); }
+.section-title h2::before, .form-section__title::before { content: ""; flex: none; width: 4px; height: 1.05em; border-radius: 2px; background: var(--sec-mark, var(--mark)); }
 
 /* ---------- Leere Zustände / Laden ---------- */
 .empty {

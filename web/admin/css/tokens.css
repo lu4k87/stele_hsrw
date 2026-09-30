@@ -37,6 +37,12 @@
   --tint: #f4f7fc;
   --tint-border: #dde5f0;
   --mark: var(--primary);
+  /* Section-Töne: Kopf-Hintergrund, Rand, Markierung je Abschnitt (Karten rotieren 1–5, .tone-N setzt fest) */
+  --sec-1: #eef4ff; --sec-1-border: #d3e0fb; --sec-1-mark: #2563eb;
+  --sec-2: #e8f6f4; --sec-2-border: #c3e6df; --sec-2-mark: #0f766e;
+  --sec-3: #f3effd; --sec-3-border: #ddd3f7; --sec-3-mark: #6d28d9;
+  --sec-4: #fdf4e4; --sec-4-border: #efdcb3; --sec-4-mark: #b45309;
+  --sec-5: #fcedf2; --sec-5-border: #f1cfdb; --sec-5-mark: #be185d;
   --focus: #2563eb;
 
   /* Zustände (Text-Farbe / Fläche / Rand) */
@@ -146,6 +152,11 @@
   --tint: #15213a;
   --tint-border: #2b3b58;
   --mark: #6fa2ff;
+  --sec-1: #15213a; --sec-1-border: #2b3b58; --sec-1-mark: #6fa2ff;
+  --sec-2: #0f2827; --sec-2-border: #1f4a47; --sec-2-mark: #4fd1c5;
+  --sec-3: #1e1936; --sec-3-border: #3a2f63; --sec-3-mark: #b39dfa;
+  --sec-4: #291f10; --sec-4-border: #4d3c1c; --sec-4-mark: #f5b94a;
+  --sec-5: #2b1521; --sec-5-border: #532a40; --sec-5-mark: #f58bb5;
   --focus: #8cb8ff;
   --success: #5ad38a;
   --success-soft: #0f2a1d;
@@ -194,6 +205,11 @@
     --tint: #15213a;
     --tint-border: #2b3b58;
     --mark: #6fa2ff;
+    --sec-1: #15213a; --sec-1-border: #2b3b58; --sec-1-mark: #6fa2ff;
+    --sec-2: #0f2827; --sec-2-border: #1f4a47; --sec-2-mark: #4fd1c5;
+    --sec-3: #1e1936; --sec-3-border: #3a2f63; --sec-3-mark: #b39dfa;
+    --sec-4: #291f10; --sec-4-border: #4d3c1c; --sec-4-mark: #f5b94a;
+    --sec-5: #2b1521; --sec-5-border: #532a40; --sec-5-mark: #f58bb5;
     --focus: #8cb8ff;
     --success: #5ad38a;
     --success-soft: #0f2a1d;
