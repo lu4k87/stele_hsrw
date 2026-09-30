@@ -33,6 +33,10 @@
   --primary-soft: #e7eefe;
   --primary-soft-border: #b9cdfb;
   --on-primary: #ffffff;
+  /* Struktur-Tönung: Kartenköpfe, Tabellenköpfe, Markierungen */
+  --tint: #f4f7fc;
+  --tint-border: #dde5f0;
+  --mark: var(--primary);
   --focus: #2563eb;
 
   /* Zustände (Text-Farbe / Fläche / Rand) */
@@ -139,6 +143,9 @@
   --primary-text: #8cb8ff;
   --primary-soft: #16264a;
   --primary-soft-border: #2d4a86;
+  --tint: #15213a;
+  --tint-border: #2b3b58;
+  --mark: #6fa2ff;
   --focus: #8cb8ff;
   --success: #5ad38a;
   --success-soft: #0f2a1d;
@@ -184,6 +191,9 @@
     --primary-text: #8cb8ff;
     --primary-soft: #16264a;
     --primary-soft-border: #2d4a86;
+    --tint: #15213a;
+    --tint-border: #2b3b58;
+    --mark: #6fa2ff;
     --focus: #8cb8ff;
     --success: #5ad38a;
     --success-soft: #0f2a1d;

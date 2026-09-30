@@ -5,7 +5,7 @@ Vanilla-JS-SPA ohne Build. Einstieg `index.html` → `js/main.js`. Fachlicher Ve
 ## Verzeichnisse
 | Pfad | Inhalt |
 |---|---|
-| `css/tokens.css` | Design-Tokens hell/dunkel – **nur diese Variablen** für Farben, Abstände, Radien, Schriftgrößen |
+| `css/tokens.css` | Design-Tokens hell/dunkel – **nur diese Variablen** für Farben, Abstände, Radien, Schriftgrößen; Struktur-Tönung: `--tint`/`--tint-border` (Karten- und Tabellenköpfe), `--mark` (Kartenkopf-Icons, Akzentbalken vor Abschnittstiteln, KPI-Oberkante) |
 | `css/base.css` | Reset, Typografie, Fokus, Layout-Helfer (`.stack`, `.cluster`, `.grid-auto`, `.split`, `.truncate` …) |
 | `css/components.css` | Knöpfe, Formulare, Karten, Chips, Tabellen, Tabs, Dialoge, Menüs, Toasts, Leer-/Ladezustände, Player-Rahmen |
 | `css/shell.css`, `css/login.css` | App-Rahmen, Anmeldung |
