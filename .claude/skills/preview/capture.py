@@ -18,7 +18,8 @@ shots.json:
      {"name": "player", "page": "player", "width": 540, "height": 960},
      {"name": "mockup", "url": "file:///pfad/mockup.html"}]}
   page  = admin (Hash-Route) · show (Vorführseite) · player (Player der Demo-Stele) · url = beliebige Adresse
-  js    = Rumpf einer async-Funktion (await erlaubt), läuft nach Laden + Theme
+  js    = Rumpf einer async-Funktion (await erlaubt), läuft nach Laden + Theme;
+          ein return-Wert wird ausgegeben (Prüfwerte)
   css   = zusätzliches CSS (geplante Änderung vorab einspielen, z. B. Vorher/Nachher)
   clip  = nur dieses Element (Selektor) aufnehmen, pad = Rand in px (Standard 12)
   user  = Demo-Konto (admin, redaktion, autor, betrachter) – zeigt die Ansicht mit dessen Rechten
@@ -89,7 +90,9 @@ def main():
             if shot.get("css"):
                 page.js("(css) => document.head.append(Object.assign(document.createElement('style'), {textContent: css}))", shot["css"])
             if shot.get("js"):
-                page.js(f"async () => {{ {shot['js']} }}")
+                r = page.js(f"async () => {{ {shot['js']} }}")
+                if r is not None:
+                    print(f"   = {shot['name']}: {r}")  # Rückgabe des js (Prüfwerte)
             time.sleep(shot["wait"])
             clip = f"document.querySelector({json.dumps(shot['clip'])})" if shot.get("clip") else None
             shooter.shot(page, shot["name"], clip, pad=shot["pad"])

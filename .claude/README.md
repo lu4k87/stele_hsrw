@@ -5,12 +5,13 @@ Projektregeln für jeden Chat: `AGENTS.md` in der Wurzel.
 
 | Ort | Zweck |
 |---|---|
-| `settings.json` | Leseverbote (`data/`, `.venv/`, `secret_key`) + Hook-Einträge |
+| `settings.json` | Leseverbote (`data/`, `.venv/`, `secret_key`) + Hook-Einträge; `ENABLE_CLAUDEAI_MCP_SERVERS=false` (claude.ai-Connectoren hier ungenutzt, sparen Kontext) |
 | `hooks/pre_tool_guard.py` | warnt vor Bash/Edit (blockiert nie): breites pkill/killall, CMS-Start ohne eigenen Port/`STELECMS_DATA`, ändernde Anfragen an 8090, Schreiben in `data/`/`.venv/`, bestehende Migrationen, `git --force`/`--no-verify`/`add -A` |
-| `hooks/post_edit_check.py` | prüft nach jedem Edit die Datei: Python-Syntax (+ pyflakes, falls installiert), JSON, `cursor: help`, feste Farben außerhalb `tokens.css`, externe Skripte in `web/` |
+| `hooks/chat_claims.py` | Datei-Register paralleler Chats (`/tmp/stele_hook_stamps_<uid>/claims/<session>.json`: Titel, PID, geänderte Dateien); `pre_tool_guard.py` warnt beim Ändern/Committen von Dateien mit uncommitteten Änderungen anderer Chats, `post_edit_check.py` trägt eigene Änderungen ein |
+| `hooks/post_edit_check.py` | prüft nach jedem Edit die Datei: Python-Syntax (+ pyflakes, falls installiert), JSON, `cursor: help`, feste Farben außerhalb `tokens.css`, externe Skripte in `web/`; nach Bash dieselben Prüfungen für Dateien, die der Befehl geändert hat (`python3 - <<EOF`, `sed -i`; Stilregeln nur für per `git diff` hinzugefügte Zeilen; Startzeit-Stempel von `pre_tool_guard.py`) |
 | `hooks/chat_length_hint.py` | vor jeder Nachricht: ab ~150k Token Kontext Hinweis an Claude (neuen Chat vorschlagen), ab ~250k zusätzlich Meldung an den User; Schwellen per `CHAT_HINT_TOKENS`/`CHAT_STRONG_TOKENS` |
 | `skills/<name>/SKILL.md` | `answer-page`, `commit`, `test-isolated`, `ui-change`, `docs`, `preview` |
-| `skills/answer-page/` | Antwortformat (Log-Style) für jede Chat-Antwort |
+| `skills/answer-page/` | Antwortformat (Log-Style) für jede Chat-Antwort: `━`-Blöcke, Status-Tabelle am Ende, Chat-Status |
 | `skills/preview/` | Vorschau-Webseiten für UI-Änderungen/Entscheidungen: `capture.py` (Screenshots isoliert), `build.py` (Spec → Seite → Artifact), `example/`, siehe `skills/preview/README.md` |
 
 - Übernommen und angepasst aus dem Workspace `dev_ws` (ohne ROS-/Roboter-Teile, ohne `build-pkg` – das CMS hat keinen Build).

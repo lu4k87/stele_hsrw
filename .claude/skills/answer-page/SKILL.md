@@ -1,36 +1,33 @@
 ---
 name: answer-page
-description: Antwortformat (Log-Style) für JEDE Chat-Antwort im Stele CMS – Status-Kopf, ━-Blöcke, Status-Zeile, Git-Zeile, Test-Zeile, Chat Done (AGENTS.md §1); vor dem Schreiben der finalen Nachricht laden.
+description: Antwortformat (Log-Style) für JEDE Chat-Antwort im Stele CMS – ━-Blöcke, Status-Zeile, Status-Tabelle (Status/Dateien/Tests/Push), Chat-Status (AGENTS.md §1); vor dem Schreiben der finalen Nachricht laden.
 ---
 
 # Antwortformat (.claude/skills/answer-page)
 
 Gilt für **jede** Antwort. Keine Zusammenfassungsseite und keine Abschluss-Box: kein Artifact als Zusammenfassung,
-kein Block `🌐 Zusammenfassung`, kein Block `📦 ABSCHLUSS`; Git-Stand steht in der Git-Zeile, Tests im Status-Kopf
-und in der Test-Zeile.
+kein Block `🌐 Zusammenfassung`, kein Block `📦 ABSCHLUSS`. Git-Stand und Tests stehen nur in der Status-Tabelle
+am Ende (keine eigene Git- oder Test-Zeile, kein Status-Kopf oben).
 
 ## Schluss der Antwort
-Nach dem letzten Inhaltsblock, in dieser Reihenfolge:
-1. Gehört eine Vorschau (Skill `preview`) zur Antwort: Trennlinie `---` + `🖼️ Vorschau: <URL>`.
-2. Gibt es Offenes: Trennlinie `---` + Block `### ⏭️ Offen`.
-3. Bei Vorschlag „Neuer Chat?“: Trennlinie + Block `### 📄 STARTTEXT FÜR DEN NEUEN CHAT`.
-4. (Leerzeile) Status-Zeile: `🏁 **AUFGABE ERLEDIGT**` nur ohne Block `⏭️ Offen`, sonst `⏳ **AUFGABE OFFEN**`.
-5. (Leerzeile) Git-Zeile `📦 **Git Status:** <kurzer Text>`.
-6. (Leerzeile) nur wenn getestet wurde: Test-Zeile `🧪 **Tests:** <kurzer Text>`.
-7. (Leerzeile) als **allerletzte Zeile** `✅ **Chat Done**`, bei `⏳ AUFGABE OFFEN` als `✅ **Chat Done** · ⏳ Chat noch nicht fertig`.
+Nach dem letzten Inhaltsblock:
+- Gehört eine Vorschau (Skill `preview`) zur Antwort: Trennlinie `---` + `🖼️ Vorschau: <URL>`.
+- Gibt es Offenes: Trennlinie `---` + Block `### ⏭️ Offen`.
+- Bei Vorschlag „Neuer Chat?“: Trennlinie + Block `### 📄 STARTTEXT FÜR DEN NEUEN CHAT`.
+
+Dann, in dieser Reihenfolge, jeweils durch Leerzeile getrennt:
+1. **Status-Zeile:** `🏁 **AUFGABE ERLEDIGT**` nur ohne Block `⏭️ Offen`, sonst `⏳ **AUFGABE OFFEN**`.
+2. Trennlinie `---`.
+3. **Status-Tabelle** `| ✅ Status | 🛠️ Dateien | 🧪 Tests | 📦 Push |` (immer, auch bei Kurzantworten; Werte + Sonderfälle unten), danach ein **Leerabsatz**: Leerzeile, Zeile `&nbsp;`, Leerzeile.
+4. **Chat-Status-Zeile** als **allerletzte Zeile** – genau **eine** Variante, nie beide:
+   `✅ **Aufgaben aus diesem Chat: fertig**` (nichts offen) oder `⏳ **Aufgaben aus diesem Chat: noch nicht fertig**` (bei `⏳ AUFGABE OFFEN`).
 
 Vor **jeder** Trennlinie eine Leerzeile (sonst wird die Zeile davor zur Überschrift). Links nie selbst öffnen,
 nicht nachfragen (kein Dialog „Seite öffnen?“, kein Artifact `open`).
 
 ## Muster
-Status-Kopf (nicht bei Kurzantworten) → Blöcke mit `━`-Überschrift → Schluss:
+Blöcke mit `━`-Überschrift → Schluss:
 ````
-| ✅ Status | 🛠️ Dateien | 🧪 Tests | 📦 Commit |
-|---|---|---|---|
-| fertig | 2 | 151/151 | `a1b2c3d` |
-
----
-
 ### 🛠️ ÄNDERUNGEN ━━━━━━━━━━━━━
 | 📄 Datei | Änderung |
 |---|---|
@@ -54,23 +51,32 @@ Status-Kopf (nicht bei Kurzantworten) → Blöcke mit `━`-Überschrift → Sch
 
 ⏳ **AUFGABE OFFEN**   ← Block ⏭️ Offen vorhanden; nichts offen → 🏁 **AUFGABE ERLEDIGT**
 
-📦 **Git Status:** `a1b2c3d` gepusht   ← immer
+---
 
-🧪 **Tests:** pytest 151/151 · UI hell + dunkel ok   ← nur wenn getestet wurde
+| ✅ Status | 🛠️ Dateien | 🧪 Tests | 📦 Push |
+|---|---|---|---|
+| offen | 2 | pytest 151/151 | `a1b2c3d` |
 
-✅ **Chat Done** · ⏳ Chat noch nicht fertig   ← nur bei AUFGABE OFFEN; sonst nur ✅ **Chat Done**
+&nbsp;   ← Leerabsatz unter der Tabelle (immer)
+
+⏳ **Aufgaben aus diesem Chat: noch nicht fertig**   ← bei AUFGABE OFFEN; sonst ✅ **Aufgaben aus diesem Chat: fertig**
 ````
-- **Git-Zeile** (immer, auch bei Kurzantworten): `📦 **Git Status:**` + max. ~6 Wörter, z. B. `` `a1b2c3d` gepusht `` · `nicht committet – <Grund>` · `nichts geändert` · `❌ Push fehlgeschlagen`.
-- **Test-Zeile** (nur wenn etwas getestet/geprüft wurde): `🧪 **Tests:**` + was lief und Ergebnis, z. B. `pytest 151/151` · `Headless Chrome hell + dunkel ok` · `❌ pytest 2 Fehler`.
+
+## Status-Tabelle: Werte und Sonderfälle
+| Spalte | Normalfall | Sonderfälle |
+|---|---|---|
+| ✅ Status | `fertig` (bei 🏁) | `offen` (bei ⏳, Arbeit geht weiter) · `❓ Rückfrage` (wartet auf Auswahl) · `Vorschlag` (nur Vorschau/Plan, nichts umgesetzt) · `❌ blockiert` (Fehler, Test rot) · `Info` (reine Frage/Erklärung) |
+| 🛠️ Dateien | Anzahl eigener geänderter Dateien | `0` wenn nichts geändert |
+| 🧪 Tests | knapp was lief + Ergebnis, z. B. `pytest 151/151` · `UI hell + dunkel ok` · `Hook-Simulation ok` | `–` nicht getestet · `❌ pytest 149/151` · `❌ 2 Konsolenfehler` |
+| 📦 Push | `` `a1b2c3d` `` = committet **und** gepusht | mehrere Commits: letzter Hash + Anzahl, `` `a1b2c3d` (+2) `` · `–` nichts geändert · `nicht committet` (Grund + welcher Chat übernimmt im Block `⚠️ HINWEISE`) · `` `a1b2c3d` ❌ nicht gepusht `` |
+
 - Kein Build-Schritt im Projekt → keine Build-Zeile; bei Web-Änderungen im Block `⚠️ HINWEISE` auf Browser-Reload (Strg+Shift+R) hinweisen.
-- Nicht committet: Grund als Stichpunkt im Block `⚠️ HINWEISE`.
 
 ## Stilregeln
-- **Status-Kopf** ganz oben (nicht bei Kurzantworten): eine Tabellenzeile `| ✅ Status | 🛠️ Dateien | 🧪 Tests | 📦 Commit |`, Werte knapp (`fertig`/`Vorschlag`/`❌ blockiert` · Anzahl · `151/151`/`–` · Hash/`–`), danach `---`.
 - **Blöcke:** Überschrift = Icon + Titel in GROSSBUCHSTABEN + Linie `━` (`🔍 ANALYSE`, `🛠️ ÄNDERUNGEN`, `✅ GEPRÜFT`, `⚠️ HINWEISE`); `⏭️ Offen` ohne Linie. Zwischen Blöcken `---`, davor und danach je eine Leerzeile.
 - **Hinweise** (Risiken, Einschränkungen, Weggelassenes) und **Offen** (was noch zu tun ist) immer getrennte Blöcke.
-- **Icons** sparsam, feste Bedeutung: ✅ erledigt · ❌ Fehler · ⚠️ Warnung · ❓ Rückfrage · 🛠️ Änderung · 📄 Datei · 🧪 Test · 🔍 Befund · 💡 Vorschlag · ⏭️ nächster Schritt · 📦 Commit · 🖥️ Stele/Player · 🖼️ Vorschau · 🏁 Aufgabe erledigt · ⏳ Aufgabe offen. Block-Icon nicht im Stichpunkt wiederholen; am Stichpunkt höchstens ein abweichendes Icon; keine Deko-Icons.
+- **Icons** sparsam, feste Bedeutung: ✅ erledigt · ❌ Fehler · ⚠️ Warnung · ❓ Rückfrage · 🛠️ Änderung · 📄 Datei · 🧪 Test · 🔍 Befund · 💡 Vorschlag · ⏭️ nächster Schritt · 📦 Push · 🖥️ Stele/Player · 🖼️ Vorschau · 🏁 Aufgabe erledigt · ⏳ Aufgabe offen. Block-Icon nicht im Stichpunkt wiederholen; am Stichpunkt höchstens ein abweichendes Icon; keine Deko-Icons.
 - Geänderte Dateien als Tabelle `| 📄 Datei | Änderung |`, Vergleiche/Mehrfachergebnisse als kleine Tabelle, Dateien als klickbare Links.
-- **Kurzantworten** (1–3 Zeilen): ohne Status-Kopf und Überschriften; Status-Zeile, Git-Zeile, ggf. Test-Zeile und `✅ **Chat Done**` bleiben.
+- **Kurzantworten** (1–3 Zeilen): ohne Block-Überschriften; Status-Zeile, `---`, Status-Tabelle und Chat-Status-Zeile bleiben.
 - **Rückfragen** (❓ im Block `⏭️ Offen`): nach der fertigen Antwort `AskUserQuestion` (max. 4 Fragen, 2–4 Optionen, Empfehlung zuerst mit „(Recommended)“); die Auswahl gilt als Antwort → direkt weiterarbeiten.
 - **Block `⚠️ HINWEISE`:** oberste Punkte mit `✅` vorn = positiv, ohne Icon = Warnung, `❗`/`❌` vorn = Fehler/wichtig; Unterpunkte normal.

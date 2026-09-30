@@ -5,7 +5,7 @@ description: Git-Commits im Stele CMS im Stil des Repos (Conventional Commits au
 
 # Commit im Stele CMS
 
-0. Parallele Chats prüfen: `ListAgents` + `git status --short`. Fremde Änderungen gibt es oft → mit `git commit -- <pfade>` nur die eigenen Pfade committen.
+0. Parallele Chats prüfen: `ListAgents` + `git status --short`. Fremde Änderungen gibt es oft → mit `git commit -- <pfade>` nur die eigenen Pfade committen. Hook-Hinweis „uncommittete Änderungen von Chat …“ beim `git add`/`git commit` → Datei enthält fremde Zeilen: nur eigene Hunks stagen (Patch aus eigenem Diff + `git apply --cached`) oder den Chat fragen.
 1. `git status --short` und `git diff --stat` ansehen (nicht den vollen Diff, außer für die Beschreibung nötig – dann pro Datei gezielt).
 2. Nach Thema aufteilen, ein Thema pro Commit:
    - `feat|fix|style|refactor(admin)`: `web/admin/`
@@ -25,4 +25,4 @@ description: Git-Commits im Stele CMS im Stil des Repos (Conventional Commits au
    - Fremde uncommittete Änderungen in derselben Datei: den Peer per `SendMessage` fragen – mit seinem OK mitcommitten (im Body nennen) oder ihm die Datei überlassen.
    - Kein `stash`, `reset`, `checkout`, `rebase` oder `pull` mit Umbau des Arbeitsbaums, solange andere Chats laufen.
 6. Pushen: `git push` (nur Fast-Forward, nie `--force`, nie `--no-verify` ohne Auftrag). Bei Ablehnung (Remote neuer) nicht selbst mergen, sondern melden. Der Pre-commit-Hook (`.githooks/pre-commit`) führt bei `server/`-Änderungen die Tests aus.
-7. Stand in der Git-Zeile melden (Skill `answer-page`): `📦 **Git Status:** `<Hash>` gepusht` oder `📦 **Git Status:** nicht committet – <Grund>`.
+7. Stand am Ende der Antwort in der Spalte `📦 Push` der Status-Tabelle melden (Skill `answer-page`): `` `<Hash>` `` = gepusht, `` `<Hash>` (+2) `` bei mehreren Commits, `nicht committet` (Grund + welcher Chat übernimmt → Block `⚠️ HINWEISE`), `` `<Hash>` ❌ nicht gepusht ``.

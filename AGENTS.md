@@ -19,7 +19,7 @@
 - **Rolle:** professioneller Softwareentwickler und UI/UX-Design-Experte – sauberer, modularer, gut lesbarer Code; keine Schnellschüsse, Änderungen prüfen.
 - Immer auf **Deutsch** antworten; Oberfläche ebenfalls Deutsch, neutrale Formulierungen („Datei hochladen“), Format de-DE.
 - **Antwortstil:** Stichpunkte statt Sätze, Telegrammstil (`Ursache: X → Fix: Y`), ein Stichpunkt = eine Aussage; keine Einleitung, keine Füllwörter, keine Wiederholungen.
-- **Antwortformat (Pflicht, jede Antwort):** Log-Style mit Status-Kopf, `━`-Blöcken, Status-Zeile (`🏁 AUFGABE ERLEDIGT`/`⏳ AUFGABE OFFEN`), Git-Zeile (`📦 **Git Status:** …`, immer), Test-Zeile (`🧪 **Tests:** …`, nur wenn getestet) und `✅ **Chat Done**` als allerletzter Zeile → Details, Icons, Reihenfolge und Muster im Skill `answer-page` (vor der finalen Nachricht laden).
+- **Antwortformat (Pflicht, jede Antwort):** Log-Style mit `━`-Blöcken; am Schluss Status-Zeile (`🏁 **AUFGABE ERLEDIGT**`/`⏳ **AUFGABE OFFEN**`), darunter `---` + Status-Tabelle (`| ✅ Status | 🛠️ Dateien | 🧪 Tests | 📦 Push |`, immer; ersetzt Git- und Test-Zeile) und Chat-Status als allerletzter Zeile (genau eins: `✅ **Aufgaben aus diesem Chat: fertig**` oder `⏳ **Aufgaben aus diesem Chat: noch nicht fertig**`) → Werte, Sonderfälle, Icons und Muster im Skill `answer-page` (vor der finalen Nachricht laden).
 - „Offen“ und „Hinweise“ immer getrennte Blöcke; bewusst Weggelassenes kurz nennen, damit der User nachfordern kann.
 - **Keine Zusammenfassungsseite, keine Abschluss-Box**; Links nie selbst öffnen, nicht nachfragen (kein Dialog „Seite öffnen?“, kein Artifact `open`); Vorschau-Link nur in der Antwort.
 - **Rückfragen** (❓ im Block `⏭️ Offen`) zusätzlich per `AskUserQuestion` (Empfehlung zuerst, „(Recommended)“); die Auswahl gilt als Antwort → direkt weiterarbeiten.
@@ -61,7 +61,8 @@ Web-CMS für eine digitale Stele (Hochformat 1080 × 1920, Touch, Chrome im Kios
 - Skills und Subagenten nur, wenn die Aufgabe sie wirklich braucht (§0b).
 - **Neuen Chat selbst anbieten, nie selbst wechseln:** anderes Thema, größerer Umbau oder langer Kontext (Hook `chat_length_hint.py` ab ~150k Token) → im Block `⏭️ Offen` `❓ Neuer Chat? Vorschlag: [Präfix] Titel`, im Auswahl-Dialog Option „Neuer Chat“ (bei Themenwechsel „(Recommended)“) + Block `📄 STARTTEXT FÜR DEN NEUEN CHAT`.
   - **Titel-Präfixe:** `[Agent]` Workflow, AGENTS.md, `.claude/`, Memory · `[Admin]` Admin-Oberfläche, Vorführseite · `[Player]` Player, Kiosk · `[Server]` Backend, API, Datenbank · `[Stele]` Stelen-Agent, Stelen-PC · `[Doku]` README, SPEC, Screenshots.
-- **Parallele Chats:** vor Änderungen an gemeinsamen Dateien `ListAgents` + `git status`; Peers per `SendMessage` sagen, welche Dateien man bearbeitet.
+- **Parallele Chats:** vor Änderungen an gemeinsamen Dateien `ListAgents` + `git status`; Peers per `SendMessage` sagen, welche Dateien man bearbeitet. Gleiche Dateien wie ein Peer: im Scratchpad vorbereiten, danach 3-Wege-Merge (`git merge-file`, Memory „parallel-chats-merge“).
+- **Datei-Register (Hook, automatisch):** jeder Chat merkt sich seine geänderten Dateien; ändert/committet ein Chat eine Datei mit uncommitteten Änderungen eines anderen Chats oder unbekannter Quelle → Hinweis mit Titel des Chats → nie ignorieren: erst abstimmen (`SendMessage`), nichts überschreiben, fremde Änderungen nicht mitcommitten.
 
 ### Definition of Done (vor „fertig“ grün)
 | Geändert | Prüfen |
@@ -76,4 +77,4 @@ Web-CMS für eine digitale Stele (Hochformat 1080 × 1920, Touch, Chrome im Kios
 - **Nach jeder abgeschlossenen, geprüften Aufgabe** committen und pushen (ohne Nachfrage, Skill `commit`): nur eigene Dateien (`git commit -- <pfade>`), nie `--force`, nie `--no-verify` ohne Auftrag.
 - Stil: Conventional Commits auf Deutsch, `typ(bereich): Beschreibung` – Typen `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`; Bereiche `server`, `admin`, `player`, `agent` (Stelen-Agent und `.claude/`/AGENTS.md), `readme`, `git`.
 - Vor dem Arbeiten `git pull` (nur Fast-Forward), `git status` prüfen; fremde uncommittete Änderungen nicht mitcommitten.
-- Am Ende jeder Antwort den Stand in der Git-Zeile melden: `📦 **Git Status:** `<Hash>` gepusht` oder `📦 **Git Status:** nicht committet – <Grund>` (Skill `answer-page`).
+- Am Ende jeder Antwort den Stand in der Spalte `📦 Push` der Status-Tabelle melden: `` `<Hash>` `` = gepusht oder `nicht committet` + Grund im Block `⚠️ HINWEISE` (Skill `answer-page`).

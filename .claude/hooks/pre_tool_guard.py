@@ -9,11 +9,19 @@ Blockiert nie – die Warnung geht als Kontext an Claude und als Meldung an den 
          schreibt/löscht in data/ oder .venv/
          git push --force, --no-verify, git add -A/.
   Edit   data/, .venv/, bestehende Migrationen, secret_key
+Schreibt ein Bash-Befehl evtl. Dateien, merkt er sich die Startzeit (STAMPS/<tool_use_id>);
+post_edit_check.py prüft danach die geänderten Dateien wie bei Edit/Write.
+Parallele Chats (chat_claims.py): Ändern oder Committen einer Datei mit uncommitteten
+Änderungen eines anderen Chats/unbekannter Quelle → Hinweis mit Titel des Chats.
 """
 import json
 import re
 import sys
+import time
 from pathlib import Path
+
+import chat_claims
+from chat_claims import STAMPS
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATIONS = 'server/stelecms/migrations/'
@@ -28,6 +36,11 @@ VENV_EXE = re.compile(r'(\./)?\.venv/bin/\S+')  # Programmaufruf aus .venv ist k
 GIT_RISKY = re.compile(r'\bgit\s+push\b[^;&|]*(--force\b|-f\b)|--no-verify\b|\bgit\s+add\s+(-A|--all|\.)(\s|$)')
 MESSAGE = re.compile(r'''(-m|--message)(\s+|=)("(?:[^"\\]|\\.)*"|'[^']*')''', re.S)  # Commit-Texte
 HEREDOC = re.compile(r'<<-?\s*([\'"]?)(\w+)\1')
+# Schreibzugriffe inkl. Heredoc-Skripte (python3 - <<EOF ... open(p, 'w') / write_text)
+MAY_WRITE = re.compile(WRITES.pattern + r'|\bperl\s+-\w*i|\bgit\s+(apply|checkout|restore)\b'
+                       r'|write_text\(|\.write\(|open\([^)]*[\'"][wa]\+?[\'"]')
+GIT_STAGE = re.compile(r'\bgit\s+(add|commit)\b')
+GIT_ALL = re.compile(r'\bgit\s+(add\s+(-A|--all|\.)(\s|$)|commit\s+(-\w*a\b|--all))')
 
 
 def strip_heredocs(cmd):
@@ -80,6 +93,31 @@ def check_edit(fp):
     return warns
 
 
+def claim_warnings_edit(data, fp):
+    try:
+        rel = Path(fp).resolve().relative_to(ROOT).as_posix()
+        return chat_claims.conflicts(data, [rel], chat_claims.dirty_files())
+    except Exception:  # Hook darf nie scheitern (z. B. außerhalb des Repos)
+        return []
+
+
+def claim_warnings_bash(data, cmd):
+    """Uncommittete Dateien, die der Befehl nennt (bzw. bei git add -A/commit -a alle) + Staging."""
+    try:
+        dirty = chat_claims.dirty_files()
+        shell = strip_heredocs(cmd)  # git-Befehle nur außerhalb von Heredoc-Text
+        committing = bool(GIT_STAGE.search(shell))
+        if GIT_ALL.search(shell):
+            rels = sorted(dirty)
+        else:
+            rels = [r for r in dirty if r in cmd or Path(r).name in cmd]
+        if re.search(r'\bgit\s+commit\b', shell):
+            rels += sorted(chat_claims.staged_files())
+        return chat_claims.conflicts(data, rels, dirty, committing)
+    except Exception:  # Hook darf nie scheitern
+        return []
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -88,10 +126,22 @@ def main():
     tool = data.get('tool_name', '')
     inp = data.get('tool_input') or {}
     if tool == 'Bash':
-        warns = check_bash(inp.get('command') or '')
+        cmd = inp.get('command') or ''
+        may_write = MAY_WRITE.search(cmd)
+        if data.get('tool_use_id') and may_write:
+            try:
+                STAMPS.mkdir(exist_ok=True)
+                (STAMPS / data['tool_use_id']).write_text(str(time.time()))
+            except OSError:
+                pass
+        warns = check_bash(cmd)
+        if may_write or GIT_STAGE.search(strip_heredocs(cmd)):
+            warns += claim_warnings_bash(data, cmd)
     else:
         fp = inp.get('file_path') or inp.get('notebook_path')
         warns = check_edit(fp) if fp else []
+        if fp:
+            warns += claim_warnings_edit(data, fp)
     if not warns:
         return 0
     text = 'Sicherheits-Hook (nur Warnung, nicht blockiert):\n- ' + '\n- '.join(warns)

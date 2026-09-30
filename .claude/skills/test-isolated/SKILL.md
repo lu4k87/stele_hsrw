@@ -8,6 +8,7 @@ description: Isoliert testen im Stele CMS, ohne die Instanz des Users (Port 8090
 ## Grundregeln
 - Port `8090` und `data/` gehören dem User: dort nicht testen, nichts anlegen, nichts löschen, nicht neu starten.
 - Eigene Instanz: Port `18090`–`18099`, `STELECMS_DATA` im Scratchpad. Bash `run_in_background` nutzen (kein `cd && … &`, sonst ist `$!` die Subshell).
+- Auf lange Läufe (Server-Start, Screenshots) warten per `until curl -sf <url> >/dev/null; do sleep 1; done` bzw. `until grep -q <Marker> <log>; …` (mit `timeout`) oder Monitor – `sleep N; tail` blockiert der Harness.
 - Prozesse nur per PID beenden (vorher `/proc/<pid>/cmdline` bzw. `cwd` und Port prüfen), nie breites `pkill -f`/`killall`.
 - Nie sichtbare Testfenster öffnen; nur headless.
 - Stelen-Schlüssel, `secret_key` und lokale Pfade nie in Antworten oder Screenshots (maskieren).
