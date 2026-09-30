@@ -38,11 +38,11 @@
   --tint-border: #dde5f0;
   --mark: var(--primary);
   /* Section-Töne: Kopf-Hintergrund, Rand, Markierung je Abschnitt (Karten rotieren 1–5, .tone-N setzt fest) */
-  --sec-1: #eef4ff; --sec-1-border: #d3e0fb; --sec-1-mark: #2563eb;
-  --sec-2: #e8f6f4; --sec-2-border: #c3e6df; --sec-2-mark: #0f766e;
-  --sec-3: #f3effd; --sec-3-border: #ddd3f7; --sec-3-mark: #6d28d9;
-  --sec-4: #fdf4e4; --sec-4-border: #efdcb3; --sec-4-mark: #b45309;
-  --sec-5: #fcedf2; --sec-5-border: #f1cfdb; --sec-5-mark: #be185d;
+  --sec-1: #dce7fc; --sec-1-border: #bfd1f6; --sec-1-mark: #2563eb;
+  --sec-2: #d3eee8; --sec-2-border: #afdcd2; --sec-2-mark: #0f766e;
+  --sec-3: #e5ddfb; --sec-3-border: #cdbff4; --sec-3-mark: #6d28d9;
+  --sec-4: #fae5c2; --sec-4-border: #ecd092; --sec-4-mark: #b45309;
+  --sec-5: #f8d9e4; --sec-5-border: #eebccd; --sec-5-mark: #be185d;
   --focus: #2563eb;
 
   /* Zustände (Text-Farbe / Fläche / Rand) */
