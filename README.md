@@ -13,6 +13,31 @@ Inhalte pflegen, Präsentationen gestalten, per Zeitplan ausspielen, Stelen übe
 > **Testbetrieb:** Das CMS läuft vorerst nur lokal (`127.0.0.1:8090`). Netzwerk, HTTPS und die
 > endgültige Anmeldung folgen später.
 
+## Quick Setup: Vorführseite testen
+
+In fünf Minuten vom Klonen bis zur ersten eigenen Folie auf der (simulierten) Stele.
+
+1. **Holen und starten** (Python ≥ 3.10; beim ersten Start wird `.venv` angelegt):
+
+   ```bash
+   git clone git@github.com:lu4k87/stele_hsrw.git
+   cd stele_hsrw
+   ./run.sh
+   ```
+
+2. **Vorführseite öffnen:** <http://127.0.0.1:8090/admin/show-stele-index.html>
+3. **Anmelden:** auf ein Demo-Konto klicken, z. B. *Administrator* (Schnellanmeldung nur im Testbetrieb und nur auf diesem Rechner).
+4. **Ausprobieren:**
+   - **1 · Rundgang:** Karten öffnen die Bereiche der Admin-Oberfläche in einem neuen Tab; „Stele simulieren“ → *Abspielen*.
+   - **2 · Folie anlegen:** Vorlage wählen, Text und Farben ändern (Vorschau rechts), *Folie anlegen* → *Im Player abspielen*.
+   - **3 · UI-Bausteine:** Knöpfe, Formulare, Meldungen, Dialoge, Tabelle und Diagramme – hier wird nichts gespeichert.
+5. **Rollen vergleichen (optional):** oben rechts *Abmelden*, als *Autor* oder *Betrachter* anmelden – fehlende Rechte blenden Aktionen aus.
+6. **Echte Stele simulieren (optional):** unter *Stelen → Stele Foyer → Verbindung* den Player-Link kopieren und in einem zweiten Browserfenster öffnen (Vollbild wie an der Stele: `google-chrome --kiosk "<Player-Link>"`, beenden mit Alt+F4). Danach zeigt das Monitoring die Stele als online.
+7. **Aufräumen:** unten auf der Vorführseite unter *In dieser Vorführung angelegt* → *Löschen*.
+
+> Alles Angelegte landet in der lokalen Datenbank unter `data/`. Für einen Test mit eigenen, wegwerfbaren
+> Daten: `STELECMS_PORT=8091 STELECMS_DATA=/tmp/stele-test ./run.sh` und dann Port `8091` verwenden.
+
 ## Inhalt
 
 1. [Funktionen](#1-funktionen)
