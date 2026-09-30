@@ -2,7 +2,7 @@
 // Stelen-Status, Benutzer-Menü) und das Einhängen der Ansichten mit sauberem Auf- und Abbau.
 import { h, initials } from './dom.js';
 import { icon } from './icons.js';
-import { NAV } from './routes.js';
+import { NAV, NAV_FOOTER } from './routes.js';
 import { session, can, canAny, logout } from './session.js';
 import { api } from './api.js';
 import { bus } from './bus.js';
@@ -46,6 +46,7 @@ export function createShell() {
   const collapseIcon = h('span', { style: { display: 'contents' } });
   const collapseBtn = h('button', { type: 'button', class: 'sidebar__collapse' }, collapseIcon, collapseLabel);
   const navEl = h('nav', { class: 'sidebar__nav', 'aria-label': 'Hauptnavigation' });
+  const footNavEl = h('ul', { class: 'nav-list', 'aria-label': 'Weitere Seiten' });
   const sidebar = h('aside', { class: 'sidebar' },
     h('a', { class: 'sidebar__brand', href: '#/', title: 'Zur Übersicht' },
       h('span', { class: 'brand-mark' }, icon('stele')),
@@ -55,7 +56,7 @@ export function createShell() {
       ),
     ),
     navEl,
-    h('div', { class: 'sidebar__footer' }, collapseBtn),
+    h('div', { class: 'sidebar__footer' }, footNavEl, collapseBtn),
   );
 
   function renderNav() {
@@ -80,6 +81,7 @@ export function createShell() {
       }
     }
     navEl.replaceChildren(...blocks);
+    footNavEl.replaceChildren(...NAV_FOOTER.filter((it) => permOk(it.perm)).map(link));
     applyBadges();
   }
 

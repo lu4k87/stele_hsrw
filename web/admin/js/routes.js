@@ -31,6 +31,11 @@ export const NAV = [
   },
 ];
 
+// Links ganz unten in der Seitenleiste (über „Leiste einklappen“).
+export const NAV_FOOTER = [
+  { id: 'todos', label: 'To-dos', icon: 'list', href: '#/todos' },
+];
+
 // parent: Brotkrumen-Eltern (Label + Link) vor dem aktuellen Titel
 const P = {
   media: { label: 'Mediathek', href: '#/media' },
@@ -61,5 +66,6 @@ export const ROUTES = [
   { path: '/roles', nav: 'roles', group: 'Verwaltung', title: 'Rollen & Rechte', perm: ['users.view', 'roles.manage'], load: () => import('./views/roles.js') },
   { path: '/audit', nav: 'audit', group: 'Verwaltung', title: 'Protokoll', perm: 'audit.view', load: () => import('./views/audit.js') },
   { path: '/settings', nav: 'settings', group: 'Verwaltung', title: 'Einstellungen', perm: 'settings.manage', load: () => import('./views/settings.js') },
+  { path: '/todos', nav: 'todos', title: 'To-dos', load: () => import('./views/todos.js') },
   { path: '/profile', nav: null, title: 'Profil', load: () => import('./views/profile.js') },
 ];
