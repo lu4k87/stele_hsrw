@@ -324,7 +324,7 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
   "offline_after_s": 45,
   "retention_days": 30,
   "default_design_id": null,
-  "default_slide_duration_s": 10,
+  "default_slide_duration_s": 7,
   "stale_after_days": 7
 }
 ```
@@ -332,7 +332,7 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
 ### 5.2 Diashow-Einstellungen (`presentations.settings`)
 ```json
 {
-  "default_duration_s": 10,         // 2..600
+  "default_duration_s": 7,          // 2..600
   "transition": "fade",             // none | fade | slide-left | slide-up | zoom
   "transition_ms": 800,             // 0..3000
   "order": "sequential",            // sequential | shuffle

@@ -16,7 +16,7 @@ from .validation import Validator, is_int
 # ------------------------------------------------------------ Standardwerte
 
 PRESENTATION_SETTINGS = {
-    "default_duration_s": 10,
+    "default_duration_s": 7,
     "transition": "fade",
     "transition_ms": 800,
     "order": "sequential",

@@ -19,7 +19,7 @@ DEFAULT_SETTINGS = {
     "offline_after_s": 45,
     "retention_days": 30,
     "default_design_id": None,
-    "default_slide_duration_s": 10,
+    "default_slide_duration_s": 7,
     "stale_after_days": 7,
 }
 

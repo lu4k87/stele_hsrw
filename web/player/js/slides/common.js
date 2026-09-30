@@ -28,7 +28,7 @@ export function baseView(el) {
 }
 
 export function durationMs(slide, settings) {
-  const s = Number(slide && slide.duration_s) || Number(settings && settings.default_duration_s) || 10;
+  const s = Number(slide && slide.duration_s) || Number(settings && settings.default_duration_s) || 7;
   return Math.max(2, s) * 1000;
 }
 

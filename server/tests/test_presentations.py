@@ -10,7 +10,7 @@ def test_create_uses_default_design_and_settings(admin):
     p = admin.post("/api/presentations", json={"name": "Neu"}).get_json()
     assert p["status"] == "draft" and p["review_state"] == "none"
     assert p["design"]["name"] == "Standard" and p["design_id"] == p["design"]["id"]
-    assert p["settings"]["transition"] == "fade" and p["settings"]["default_duration_s"] == 10
+    assert p["settings"]["transition"] == "fade" and p["settings"]["default_duration_s"] == 7
     assert p["items"] == [] and p["published_at"] is None
 
 
@@ -37,7 +37,7 @@ def test_items_roundtrip_and_durations(admin):
     assert first["content"]["type"] == "image" and first["effective_duration_s"] == 7
     assert first["options"] == {"fit": "contain", "fullscreen": True}
     assert [i["validity"] for i in body["items"]] == ["active", "expired", "scheduled"]
-    assert body["item_count"] == 3 and body["active_item_count"] == 2 and body["total_duration_s"] == 17
+    assert body["item_count"] == 3 and body["active_item_count"] == 2 and body["total_duration_s"] == 14
     assert body["thumb_url"] == img["urls"]["thumb"]
     # IDs bleiben beim erneuten Speichern erhalten (Reihenfolge = Array)
     ids = [i["id"] for i in body["items"]]

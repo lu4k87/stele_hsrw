@@ -25,7 +25,7 @@ export const TIMING = Object.freeze({
 });
 
 export const SLIDESHOW_DEFAULTS = Object.freeze({
-  default_duration_s: 10,
+  default_duration_s: 7,
   transition: 'fade',
   transition_ms: 800,
   order: 'sequential',
@@ -125,7 +125,7 @@ export function normalizeTouchMenu(input) {
 export function normalizeSettings(input) {
   const s = mergeDefaults(SLIDESHOW_DEFAULTS, input);
   s.transition_ms = Math.min(3000, Math.max(0, Number(s.transition_ms) || 0));
-  s.default_duration_s = Math.min(600, Math.max(2, Number(s.default_duration_s) || 10));
+  s.default_duration_s = Math.min(600, Math.max(2, Number(s.default_duration_s) || 7));
   if (!TRANSITIONS.includes(s.transition)) s.transition = 'fade';
   return s;
 }

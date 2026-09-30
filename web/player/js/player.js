@@ -58,7 +58,7 @@ export class Player {
         return p ? frameInsets(p.design, p.settings, null) : { top: 0, bottom: 0 };
       },
       getVolume: () => (this.o.muted ? 0 : this.steleSettings.volume),
-      getSettings: () => (this.shownPres || this.activePres || { settings: { background: '#000000', default_duration_s: 10 } }).settings,
+      getSettings: () => (this.shownPres || this.activePres || { settings: { background: '#000000', default_duration_s: 7 } }).settings,
       onOpen: () => {
         this.show.pause();
         this.frame.setHidden(false, 250);
