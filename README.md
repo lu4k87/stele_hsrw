@@ -163,6 +163,7 @@ Eigenes Administratorkonto und Passwörter auf der Kommandozeile:
 | `docs/SPEC.md` | Spezifikation (Datenmodell, API, Player-Vertrag, UX-Regeln) |
 | `docs/img/` | Screenshots für diese README |
 | `.githooks/` | Prüfung vor jedem Commit |
+| `AGENTS.md` | Arbeitsregeln für KI-Assistenten (Claude Code) |
 | `data/` | Laufzeitdaten – nicht im Git |
 
 ## 7. Entwicklung und Git
