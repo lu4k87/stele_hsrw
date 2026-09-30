@@ -131,6 +131,18 @@ export default async function mount(root, ctx) {
     });
   }
 
+  function staleCard(items, days) {
+    return listCard({
+      title: 'Länger nicht aktualisiert', iconName: 'calendar-clock', items,
+      empty: `Alle Präsentationen auf den Stelen wurden in den letzten ${plural(days, 'Tag', 'Tagen')} veröffentlicht.`,
+      render: (p) => h('li', {},
+        h('div', { class: 'list__main' },
+          h('a', { class: 'list__title', href: `#/presentations/${p.id}` }, p.name),
+          h('span', { class: 'list__meta' }, h('time', { datetime: p.published_at, title: formatDateTime(p.published_at) }, `veröffentlicht ${formatRelative(p.published_at)}`))),
+        h('a', { class: 'btn btn--ghost btn--sm', href: `#/presentations/${p.id}`, 'aria-label': `„${p.name}“ öffnen` }, 'Öffnen')),
+    });
+  }
+
   function activityCard(items) {
     return listCard({
       title: 'Letzte Aktivität', iconName: 'history', items: items.slice(0, 6), count: false,
@@ -157,6 +169,7 @@ export default async function mount(root, ctx) {
     if (Array.isArray(d.reviews) && can('presentations.publish')) side.push(reviewsCard(d.reviews));
     if (Array.isArray(d.unpublished)) side.push(unpublishedCard(d.unpublished));
     if (Array.isArray(d.expiring)) side.push(expiringCard(d.expiring));
+    if (Array.isArray(d.stale)) side.push(staleCard(d.stale, d.stale_after_days || 7));
     sideSlot.hidden = !side.length;
     fill(sideSlot, ...side);
     const hasActivity = Array.isArray(d.activity);

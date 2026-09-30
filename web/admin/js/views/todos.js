@@ -8,7 +8,7 @@ import { chip } from '../ui/status.js';
 // note: Kommentar aus dem Papier bzw. Vorschlag
 const OPEN = [
   { title: 'Ziel & Takt', icon: 'calendar-clock', items: [
-    { text: 'Aktualität: tagesaktuell, wöchentlich oder monatlich?', note: 'Vorschlag: wöchentlich' },
+    { text: 'Aktualität: tagesaktuell, wöchentlich oder monatlich?', note: 'Vorschlag: wöchentlich – das CMS erinnert bereits nach 7 Tagen (einstellbar)' },
     { text: 'Wer pflegt die wöchentlichen Updates ein?' },
   ] },
   { title: 'Funktion', icon: 'lightbulb', items: [
@@ -35,7 +35,9 @@ const DONE = [
   { text: 'Medientyp (Text, Bild, Audio, Audiovisuell, Interaktiv)', result: 'Alles möglich, da Präsentation' },
   { text: 'QR-Codes als Call to Action', result: 'Bereits im Einsatz' },
   { text: 'Rubrik „Image“ (Erfolge, Projekte, Auszeichnungen)', result: 'Nötig – „Tu Gutes und sprich darüber“' },
-  { text: 'Content-Loop und Folienzeit', result: 'Eingestellt: 7 s pro Folie (Vorschlag: Loop 60–90 s, Folie 5–7 s)' },
+  { text: 'Content-Loop und Folienzeit', result: 'Eingestellt: 7 s pro Folie; das CMS warnt bei Durchlauf über 90 s und Folien über 7 s' },
+  { text: 'Aktualität im Blick behalten', result: 'Umgesetzt: Übersicht meldet Präsentationen auf Stelen, die länger als 7 Tage (einstellbar) nicht veröffentlicht wurden' },
+  { text: 'Kurze Texte, große Schrift', result: 'Umgesetzt: Info-Folie meldet viel Text (> 30 Wörter), zu stark verkleinerte oder abgeschnittene Schrift' },
   { text: 'Zielgruppe', result: 'Externe Besucher, Hochschulangehörige, Studierende' },
   { text: 'Automatisches Ablaufdatum', result: 'Im CMS: „Gültig von/bis“ je Folie + Hinweis in der Übersicht vor Ablauf' },
   { text: 'Dezentral einreichen, zentral freigeben', result: 'Im CMS: Autor reicht ein, Rolle mit Veröffentlichungsrecht gibt frei oder lehnt ab' },
@@ -50,8 +52,8 @@ const GUIDE = [
   ] },
   { title: 'Inhaltsgestaltung', icon: 'type', items: [
     '„3-Sekunden“-Visuals: Bilder, Icons, kurze Videos',
-    'Max. ein prägnanter Satz pro Screen (Headline + max. 1–2 Stichpunkte)',
-    'Große Typografie: lesbar aus 3–5 m und bei Sonnenlicht',
+    { text: 'Max. ein prägnanter Satz pro Screen (Headline + max. 1–2 Stichpunkte)', done: 'Hinweis bei viel Text' },
+    { text: 'Große Typografie: lesbar aus 3–5 m und bei Sonnenlicht', done: 'Hinweis bei zu kleiner Schrift' },
     'Keine feinen Schriftarten',
     { text: 'QR-Codes groß genug, auf Augenhöhe (z. B. Anmeldung, Lageplan)', done: 'QR-Code in Info-Folien' },
   ] },

@@ -59,3 +59,4 @@
 .ts-sk .ts-sk__fact::before { content: ""; position: absolute; left: -10px; top: -1px; width: 6px; height: 6px; border-radius: 50%; background: #F5B400; }
 .ts-sk .ts-sk__bullet { width: 66%; position: relative; margin-left: 10px; }
 .ts-sk .ts-sk__bullet::before { content: ""; position: absolute; left: -10px; top: -1px; width: 6px; height: 6px; background: #F5B400; }
+.ts-read:empty { display: none; }

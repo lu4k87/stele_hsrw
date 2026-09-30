@@ -22,7 +22,7 @@ const TABS = [
 ];
 // Feld → Tab (für Fehlermeldungen des Servers)
 const FIELD_TAB = {
-  org_name: 'general', timezone: 'general', default_slide_duration_s: 'general', default_design_id: 'general',
+  org_name: 'general', timezone: 'general', default_slide_duration_s: 'general', default_design_id: 'general', stale_after_days: 'general',
   session_idle_minutes: 'security', lockout_attempts: 'security', lockout_minutes: 'security', password_min_length: 'security', dev_login_enabled: 'security',
   upload_max_mb: 'media', auto_transcode: 'media', offline_after_s: 'operation', retention_days: 'operation',
 };
@@ -76,6 +76,7 @@ export default async function mount(root, ctx) {
   c.auto_transcode = switchToggle({ label: 'Videos automatisch umwandeln', hint: 'Wandelt Videos beim Hochladen in ein Format um, das die Stele zuverlässig abspielt (H.264/MP4). Dauert je nach Länge einige Minuten.', checked: !!saved.auto_transcode });
   c.offline_after_s = numberInput({ value: saved.offline_after_s, min: 20, max: 3600, unit: 's' });
   c.retention_days = numberInput({ value: saved.retention_days, min: 1, max: 3650, unit: 'Tage' });
+  c.stale_after_days = numberInput({ value: saved.stale_after_days, min: 1, max: 365, unit: 'Tage' });
 
   const read = {
     org_name: () => c.org_name.value.trim(),
@@ -91,9 +92,10 @@ export default async function mount(root, ctx) {
     auto_transcode: () => c.auto_transcode.input.checked,
     offline_after_s: () => num(c.offline_after_s),
     retention_days: () => num(c.retention_days),
+    stale_after_days: () => num(c.stale_after_days),
   };
   function num(ctl) { const v = ctl.input.value; return v === '' ? null : Number(v); }
-  const RANGES = { default_slide_duration_s: [2, 600], session_idle_minutes: [5, 1440], lockout_attempts: [3, 20], lockout_minutes: [1, 1440], password_min_length: [6, 64], upload_max_mb: [1, 10240], offline_after_s: [20, 3600], retention_days: [1, 3650] };
+  const RANGES = { default_slide_duration_s: [2, 600], session_idle_minutes: [5, 1440], lockout_attempts: [3, 20], lockout_minutes: [1, 1440], password_min_length: [6, 64], upload_max_mb: [1, 10240], offline_after_s: [20, 3600], retention_days: [1, 3650], stale_after_days: [1, 365] };
 
   function changes() {
     const out = {};
@@ -118,7 +120,8 @@ export default async function mount(root, ctx) {
     f('Zeitzone', 'timezone', c.timezone, { hint: 'Gilt für Zeitplan, Nachtmodus, Gültigkeiten und die Uhr auf der Stele – unabhängig von der Uhr des Stelen-PCs.' }),
     h('div', { class: 'form-row' },
       f('Standard-Foliendauer', 'default_slide_duration_s', c.default_slide_duration_s, { hint: 'Für neue Präsentationen; je Folie änderbar.' }),
-      f('Standard-Design', 'default_design_id', c.default_design_id, { hint: 'Wird neuen Präsentationen zugewiesen.' }))) });
+      f('Standard-Design', 'default_design_id', c.default_design_id, { hint: 'Wird neuen Präsentationen zugewiesen.' })),
+    f('Hinweis „Länger nicht aktualisiert“ nach', 'stale_after_days', c.stale_after_days, { hint: 'Übersicht meldet Präsentationen auf Stelen, die so lange nicht neu veröffentlicht wurden.' })) });
 
   panels.security = h('div', { class: 'stack' },
     card({ title: 'Anmeldung und Sitzungen', icon: 'lock', body: h('div', { class: 'form' },
@@ -206,6 +209,7 @@ export default async function mount(root, ctx) {
     c.auto_transcode.input.checked = !!values.auto_transcode;
     c.offline_after_s.input.value = values.offline_after_s;
     c.retention_days.input.value = values.retention_days;
+    c.stale_after_days.input.value = values.stale_after_days;
     syncDev();
   }
   function discard() { setControls(saved); clearFieldErrors(form); sync(); }

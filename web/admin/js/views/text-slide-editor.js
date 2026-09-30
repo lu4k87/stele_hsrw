@@ -43,10 +43,14 @@ const LABELS = {
   event: { title: 'Name der Veranstaltung', subtitle: 'Rubrik', body: 'Beschreibung', date: 'Datum', time: 'Uhrzeit', location: 'Ort', audience: 'Für wen?', admission: 'Eintritt' },
   list: { title: 'Überschrift', subtitle: 'Unterzeile', items: 'Aufzählungspunkte', body: 'Text unter der Liste' },
 };
+// Lesbarkeit im Vorbeigehen (Content-Strategie): Überschrift + ein Satz oder 1–2 Stichpunkte, lesbar aus 3–5 m
+const MAX_WORDS = 30;
+const READABLE_PX = 36; // Fließtext darunter ist aus 3–5 m schwer lesbar (Player verkleinert bis 30 px)
+
 const HINTS = {
   statement: { subtitle: 'Wird als „— Quelle“ angezeigt.' },
   event: { subtitle: 'z. B. Vortrag, Führung, Konzert', time: 'z. B. 18:00 oder 18:00–20:00', location: 'z. B. Großer Saal, 2. OG', audience: 'z. B. Studierende, alle Interessierten', admission: 'z. B. Eintritt frei' },
-  list: { items: 'Ein Punkt pro Zeile. Kurz halten – max. 8 Punkte sind gut lesbar.' },
+  list: { items: 'Ein Punkt pro Zeile. Kurz halten – im Vorbeigehen werden 1–2 Punkte erfasst.' },
   image_text: { image_content_id: 'Am besten ein Bild im Querformat (z. B. 1920 × 1080).' },
 };
 
@@ -222,6 +226,9 @@ export default async function mount(root, ctx) {
 
   // ---------- Vorschau ----------
   const pv = livePreview({ title: 'Vorschau der Info-Folie' });
+  const readHint = h('div', { class: 'stack ts-read', role: 'status' });
+  let fitState = null;
+  pv.frame.on('player:fit', (m) => { fitState = { body_px: Number(m.body_px) || 0, clipped: Boolean(m.clipped) }; updateReadHint(); });
   const designSel = select({
     value: designId === null ? '' : String(designId), 'aria-label': 'Rahmen für die Vorschau',
     options: [{ value: '', label: 'Ohne Header und Footer' }, ...designs.map((d) => ({ value: String(d.id), label: d.name }))],
@@ -255,12 +262,33 @@ export default async function mount(root, ctx) {
     contrast.update(pairs);
   }
 
+  function wordCount() {
+    const f = data.fields;
+    const parts = ['title', 'subtitle', 'body', 'items'].filter((k) => FIELDS[data.template].includes(k))
+      .map((k) => (Array.isArray(f[k]) ? f[k].join(' ') : String(f[k] || '')));
+    return parts.join(' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  }
+
+  function readAlert(kind, title, text) {
+    return h('div', { class: `alert alert--${kind}` }, icon(kind === 'danger' ? 'alert-circle' : 'alert-triangle'),
+      h('div', { class: 'alert__body' }, h('div', { class: 'alert__title' }, title), h('div', { class: 'alert__text' }, text)));
+  }
+
+  function updateReadHint() {
+    const words = wordCount();
+    fill(readHint,
+      words > MAX_WORDS ? readAlert('warning', `Viel Text: ${words} Wörter`, `Im Vorbeigehen wird nur wenig gelesen. Empfohlen: Überschrift und ein Satz oder 1–2 Stichpunkte (bis ca. ${MAX_WORDS} Wörter).`) : null,
+      fitState?.clipped ? readAlert('danger', 'Text passt nicht auf die Folie', 'Das Ende wird abgeschnitten. Text kürzen.')
+        : fitState && fitState.body_px < READABLE_PX ? readAlert('warning', `Schrift auf ${fitState.body_px} px verkleinert`, 'Aus 3–5 m Abstand schwer lesbar. Text kürzen, damit die Schrift groß bleibt.') : null);
+  }
+
   function changed(preview = true) {
     const dirty = isDirty();
     ctx.setDirty(dirty ? 'Die Info-Folie hat ungespeicherte Änderungen.' : false);
     saveState.textContent = dirty ? 'Ungespeicherte Änderungen' : (isNew ? '' : 'Gespeichert');
     saveState.classList.toggle('is-dirty', dirty);
     updateContrast();
+    updateReadHint();
     if (preview) refreshPreview();
   }
 
@@ -354,14 +382,15 @@ export default async function mount(root, ctx) {
       overlayField,
       h('div', { class: 'form-row' },
         field({ label: 'Ausrichtung', name: 'style.align', control: alignSeg }),
-        field({ label: 'Schriftgröße', name: 'style.size', hint: 'Lange Texte werden automatisch verkleinert.', control: sizeSeg }))) }),
+        field({ label: 'Schriftgröße', name: 'style.size', hint: 'Für 3–5 m Abstand „Mittel“ oder „Groß“. Lange Texte werden automatisch verkleinert.', control: sizeSeg }))) }),
   );
 
   const previewCard = card({
     title: 'Vorschau', icon: 'eye', className: 'ts-preview',
     body: h('div', { class: 'stack' },
       designs.length ? field({ label: 'Rahmen (Design) für die Vorschau', control: designSel, hint: 'Nur für die Vorschau – auf der Stele gilt das Design der Präsentation.' }) : null,
-      pv.el),
+      pv.el,
+      readHint),
   });
 
   fill(root, page({ wide: true, className: 'ts-page' },

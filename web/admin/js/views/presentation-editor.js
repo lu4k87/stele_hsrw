@@ -106,6 +106,10 @@ export default async function mount(root, ctx) {
     return base;
   }
   const totalDuration = () => items.filter((it) => it.enabled).reduce((a, it) => a + effDuration(it), 0);
+  // Empfehlung der Content-Strategie: Durchlauf 60–90 s, Standbild-Folien 5–7 s (Passanten in Bewegung)
+  const LOOP_MAX_S = 90;
+  const SLIDE_MAX_S = 7;
+  const tooLong = (it) => ['image', 'text'].includes(it.content?.type) && effDuration(it) > SLIDE_MAX_S;
   function nowLocal() {
     try {
       return new Intl.DateTimeFormat('sv-SE', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()).replace(' ', 'T');
@@ -331,8 +335,10 @@ export default async function mount(root, ctx) {
   const listEl = h('ol', { class: 'pe-items', 'aria-label': 'Folien in Abspielreihenfolge' });
   const listBody = h('div', { class: 'pe-list__body' });
   const addBtn = canEdit ? button({ label: 'Folien hinzufügen', icon: 'plus', variant: 'secondary', size: 'sm', onClick: addSlides }) : null;
+  const loopWarn = h('div', { class: 'alert alert--warning pe-loop-warn', role: 'status', hidden: true });
   const listCard = h('section', { class: 'card pe-list' },
     h('div', { class: 'card__header' }, listTitle, addBtn),
+    loopWarn,
     listBody);
   makeSortable(listEl, {
     disabled: () => !canEdit,
@@ -344,6 +350,13 @@ export default async function mount(root, ctx) {
     const active = items.filter((it) => it.enabled).length;
     listTitle.lastChild.textContent = `Folien (${items.length}) · ${formatDuration(totalDuration())}`;
     listTitle.title = `${plural(active, 'aktive Folie', 'aktive Folien')}, Gesamtdauer eines Durchlaufs`;
+    const total = totalDuration();
+    loopWarn.hidden = total <= LOOP_MAX_S;
+    if (!loopWarn.hidden) {
+      fill(loopWarn, icon('alert-triangle'), h('div', { class: 'alert__body' },
+        h('div', { class: 'alert__title' }, `Durchlauf dauert ${formatDuration(total)} – empfohlen sind höchstens ${LOOP_MAX_S} s`),
+        h('div', { class: 'alert__text' }, 'Wer vorbeigeht, sieht sonst nur einen Teil. Folien kürzen oder nicht benötigte deaktivieren.')));
+    }
   }
 
   function itemChips(it) {
@@ -353,6 +366,7 @@ export default async function mount(root, ctx) {
     const v = validityChip(validity(it));
     if (v) out.push(v);
     if (it.options.fullscreen) out.push(chip('info', 'Vollbild', 'maximize', { size: 'sm' }));
+    if (it.enabled && tooLong(it)) out.push(chip('warning', `Über ${SLIDE_MAX_S} s`, 'clock', { size: 'sm', title: `Empfohlen: 5–${SLIDE_MAX_S} s je Folie` }));
     if (c.status === 'processing') out.push(chip('info', 'In Verarbeitung', 'clock', { size: 'sm' }));
     if (c.status === 'error' || c.type === 'missing') out.push(chip('danger', c.type === 'missing' ? 'Inhalt fehlt' : 'Fehler', 'alert-circle', { size: 'sm' }));
     if (it.id && problems.has(it.id)) out.push(chip('danger', 'Nicht bereit', 'alert-circle', { size: 'sm' }));
@@ -587,7 +601,7 @@ export default async function mount(root, ctx) {
     } else if (c.type === 'video' && toEnd && c.duration_s) {
       durationField = h('div', { class: 'pe-note' }, icon('film', { size: 18 }), h('span', {}, `Das Video bestimmt die Dauer (${formatDuration(c.duration_s)}). Für eine feste Dauer unten „Bis zum Ende abspielen“ ausschalten.`));
     } else {
-      durationField = numField({ label: 'Dauer', value: it.duration_s ?? null, min: 1, max: 3600, unit: 's', allowEmpty: true, placeholder: `Standard: ${s.default_duration_s}`, hint: `Leer = Standard der Diashow (${formatDuration(s.default_duration_s)}).`, onValid: (v) => { it.duration_s = v; itemChanged(it, { preview: false }); } });
+      durationField = numField({ label: 'Dauer', value: it.duration_s ?? null, min: 1, max: 3600, unit: 's', allowEmpty: true, placeholder: `Standard: ${s.default_duration_s}`, hint: `Leer = Standard der Diashow (${formatDuration(s.default_duration_s)}). Empfohlen: 5–${SLIDE_MAX_S} s.`, onValid: (v) => { it.duration_s = v; itemChanged(it, { preview: false }); } });
     }
 
     const trans = select({
@@ -654,7 +668,7 @@ export default async function mount(root, ctx) {
     const reRenderList = () => { renderList(); };
     return h('div', { class: 'form' },
       h('div', { class: 'form-row' },
-        numField({ label: 'Standarddauer je Folie', value: s.default_duration_s, min: 2, max: 600, unit: 's', hint: 'Gilt für Folien ohne eigene Dauer.', onValid: (v) => { set('default_duration_s', v, { preview: false }); reRenderList(); } }),
+        numField({ label: 'Standarddauer je Folie', value: s.default_duration_s, min: 2, max: 600, unit: 's', hint: `Gilt für Folien ohne eigene Dauer. Empfohlen: 5–${SLIDE_MAX_S} s.`, onValid: (v) => { set('default_duration_s', v, { preview: false }); reRenderList(); } }),
         field({ label: 'Reihenfolge', control: segmented({ value: s.order, ariaLabel: 'Reihenfolge', options: [{ value: 'sequential', label: 'Nacheinander' }, { value: 'shuffle', label: 'Zufällig' }], onChange: (v) => set('order', v, { preview: false }) }), hint: 'Zufällig: bei jedem Durchlauf neu gemischt.' })),
       h('div', { class: 'form-row' },
         field({ label: 'Übergang', control: select({ value: s.transition, options: TRANSITIONS, disabled: !canEdit, onChange: (v) => set('transition', v) }), hint: 'Wie eine Folie in die nächste wechselt.' }),

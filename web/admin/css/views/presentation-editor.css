@@ -87,3 +87,4 @@
 .pe-note { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-3); border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-size: var(--fs-sm); }
 .pe-note .icon { flex: none; margin-top: 1px; }
 .pe-link { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fw-medium); width: fit-content; min-height: 32px; }
+.pe-loop-warn { margin: 0 var(--sp-4) var(--sp-3); }
