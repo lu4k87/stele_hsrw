@@ -27,54 +27,226 @@ Inhalte pflegen, Präsentationen gestalten, per Zeitplan ausspielen, Stelen übe
 
 ## 1. Funktionen
 
+Alle Bilder zeigen die Demo-Daten einer frischen Installation.
+
+### Übersicht und Kopfleiste
+
+- Startseite: Zustand jeder Stele, was gerade läuft und der nächste Wechsel
+- Hinweise auf wartende Freigaben, unveröffentlichte Änderungen und ablaufende Folien
+- Kopfleiste: Testbetrieb-Hinweis, Stelen-Status, Zoom 80–150 %, Hell/Dunkel, Benutzer-Menü
+
+![Kopfleiste mit Testbetrieb, Stelen-Status, Zoom, Hell/Dunkel und Benutzer](docs/img/topbar.png)
+
+<p>
+  <img src="docs/img/dashboard.png" alt="Übersicht im hellen Farbschema" width="49%">
+  <img src="docs/img/dashboard-dark.png" alt="Übersicht im dunklen Farbschema" width="49%">
+</p>
+
+*Übersicht in Hell und Dunkel.*
+
 ### Mediathek
 
 - Inhalte: Bilder, Videos, PDFs, Info-Folien (aus Vorlagen), Webseiten
-- Suche, Filter nach Typ und Schlagwort, Raster- oder Listenansicht
+- Suche, Filter nach Typ und Schlagwort, Sortierung, Raster- oder Listenansicht
 - Anzeige, in wie vielen Präsentationen ein Inhalt verwendet wird
 
-![Mediathek mit Bildern, Info-Folien, Video und Webseite](docs/img/media.png)
+![Mediathek in der Rasteransicht](docs/img/media.png)
+
+![Suche, Filter und Umschalter Raster/Liste](docs/img/media-toolbar.png)
+
+<p>
+  <img src="docs/img/media-new.png" alt="Menü „Neu“: Info-Folie oder Webseite" width="36%">
+  <img src="docs/img/media-list.png" alt="Mediathek in der Listenansicht" width="62%">
+</p>
+
+*Links: neuer Inhalt über „Neu“. Rechts: Listenansicht mit Typ, Größe und Verwendung.*
+
+<p>
+  <img src="docs/img/media-detail.png" alt="Details eines Bildes: Vorschau, Titel, Schlagworte, Dateiangaben" width="40%">
+  <img src="docs/img/media-web.png" alt="Webseite einbinden: Adresse prüfen, Zoom, Neuladen, Touch-Bedienung" width="40%">
+</p>
+
+*Links: Details eines Inhalts mit Löschen, Original und „Zu Präsentation“. Rechts: Webseite einbinden mit Prüfung, ob sie sich einbetten lässt.*
+
+#### Info-Folien
+
+- Fünf Vorlagen: Titel und Text, Bild und Text, Aussage, Veranstaltung, Liste
+- Farben mit Vorschlägen, Hintergrundbild mit Abdunklung, Ausrichtung, Schriftgröße
+- Live-Vorschau im Hochformat, auf Wunsch mit Header und Footer eines Designs
+
+![Editor für Info-Folien mit Vorlage, Inhalt und Live-Vorschau](docs/img/text-editor.png)
+
+<p>
+  <img src="docs/img/text-templates.png" alt="Auswahl der Vorlage" width="49%">
+  <img src="docs/img/text-design.png" alt="Gestaltung: Farben, Hintergrundbild, Ausrichtung, Schriftgröße" width="49%">
+</p>
 
 ### Präsentationen
 
-- Diashow aus Folien mit eigener Dauer, Übergang und Gültigkeitszeitraum
-- **Design**: Rahmen mit Header (Logo, Titel, Uhr) und Footer (Laufband oder Text)
-- **Touch-Menü**: Kacheln für Besucher, Rückkehr zur Diashow nach Inaktivität
+- Diashow aus Folien mit eigener Dauer, Übergang, Gültigkeitszeitraum und Bildunterschrift
+- Diashow-Einstellungen: Standarddauer, Reihenfolge, Übergänge, Bildanpassung, Videos, Fortschrittsbalken
+- **Design** (Rahmen) und **Touch-Menü** je Präsentation
 - Bearbeitet wird der Entwurf; an die Stele geht nur der **veröffentlichte** Stand
-- Freigabe: Autoren reichen ein, Redaktion veröffentlicht
+- Freigabe: Autoren reichen ein, Redaktion veröffentlicht oder lehnt mit Begründung ab
 
-![Präsentations-Editor: Folienliste, Vorschau im Hochformat, Einstellungen der Folie](docs/img/editor.png)
+![Präsentationen mit Status, Folienzahl, Dauer, Design und Verwendung](docs/img/presentations.png)
+
+![Präsentations-Editor: Folienliste, Vorschau im Hochformat, Einstellungen](docs/img/editor.png)
+
+<p>
+  <img src="docs/img/editor-slides.png" alt="Folienliste: sortieren, aktivieren, Dauer" width="32%">
+  <img src="docs/img/editor-slide.png" alt="Einstellungen der Folie: Dauer, Übergang, Zeitraum, Bildunterschrift, Vollbild" width="32%">
+  <img src="docs/img/editor-show.png" alt="Diashow-Einstellungen: Dauer, Reihenfolge, Übergang, Bilder, Videos, Anzeige" width="32%">
+</p>
+
+*Folienliste (Ziehen zum Sortieren), Einstellungen der Folie und der Diashow.*
+
+<p>
+  <img src="docs/img/editor-frame.png" alt="Rahmen und Touch: Design und Touch-Menü zuordnen" width="32%">
+  <img src="docs/img/editor-preview.png" alt="Vorschau der Präsentation mit Steuerung und Touch-Test" width="64%">
+</p>
+
+*Links: Design und Touch-Menü zuordnen. Rechts: Vorschau wie auf der Stele, mit „Touch testen“.*
+
+![Freigabe: eingereichte Präsentation veröffentlichen oder ablehnen](docs/img/editor-review.png)
+
+### Designs und Touch-Menüs
+
+- **Design:** Rahmen um alle Folien – Header (Logo, Titel, Uhr, Datum), Footer (Laufband mit Meldungen oder RSS, fester Text), Schrift, Akzentfarbe
+- **Touch-Menü:** Kacheln führen zu Inhalt, Galerie oder Untermenü; nach Inaktivität zurück zur Diashow
+- Beide wiederverwendbar; die Übersicht zeigt, welche Präsentationen sie nutzen
+
+![Design-Editor mit Live-Vorschau](docs/img/design-editor.png)
+
+<p>
+  <img src="docs/img/designs.png" alt="Liste der Designs mit Skizze und Verwendung" width="49%">
+  <img src="docs/img/design-header-footer.png" alt="Header und Footer eines Designs einstellen" width="30%">
+</p>
+
+![Touch-Menü-Editor mit Kacheln und Vorschau](docs/img/touch-editor.png)
+
+![Kacheln des Touch-Menüs: Ziel, Reihenfolge, Bearbeiten](docs/img/touch-tiles.png)
 
 ### Zeitplan
 
 - Präsentation je Stele nach Wochentag, Uhrzeit, Datumsbereich und Priorität
 - Ohne passenden Eintrag läuft die Standard-Präsentation
-- Wochenansicht mit Hinweis auf Konflikte und unveröffentlichte Stände
+- Wochenansicht mit aktueller Uhrzeit und Hinweis auf Konflikte und unveröffentlichte Stände
 
 ![Zeitplan in der Wochenansicht](docs/img/schedule.png)
 
-### Stelen und Monitoring
+<p>
+  <img src="docs/img/schedule-entries.png" alt="Liste der Einträge mit Tagen, Uhrzeit, Zeitraum, Priorität" width="58%">
+  <img src="docs/img/schedule-dialog.png" alt="Eintrag bearbeiten mit Warnung bei unveröffentlichter Präsentation" width="40%">
+</p>
 
-- Mehrere Stelen: Name, Standort, IP, Standard-Präsentation
-- Zustand, Verfügbarkeit, laufende Wiedergabe, Touch-Nutzung, Fehler
-- Optional: Stelen-Agent meldet CPU, RAM, Temperatur und liefert Screenshots
+*Links: Einträge (höhere Priorität gewinnt). Rechts: Eintrag bearbeiten – Hinweis, wenn die Präsentation noch nicht veröffentlicht ist.*
 
-![Monitoring: Zustand und Verfügbarkeit der Stele](docs/img/monitoring.png)
+### Stelen
+
+- Mehrere Stelen: Name, Standort, IP, Auflösung, Standard-Präsentation
+- Fernsteuerung: neu laden, identifizieren, Screenshot anfordern
+- Einstellungen: Lautstärke, Touch-Bedienung, Mauszeiger, Nachtmodus, täglicher Neustart
+- Kopplung per 6-stelligem Code oder Player-Link; Kiosk- und Agent-Aufruf zum Kopieren
+
+![Stelen als Karten mit Zustand und laufender Präsentation](docs/img/steles.png)
+
+![Stele im Detail: Live-Ansicht, Wiedergabe, Netzwerk, Stelen-PC, letzter Screenshot](docs/img/stele-detail.png)
+
+<p>
+  <img src="docs/img/stele-settings.png" alt="Einstellungen einer Stele" width="49%">
+  <img src="docs/img/stele-connection.png" alt="Verbindung: Kopplung, Player-Link, Stelen-Agent" width="49%">
+</p>
+
+*Links: Gerät, Wiedergabe und Zeiten. Rechts: Kopplung, Player-Link und Agent-Aufruf (Schlüssel im Bild ersetzt).*
+
+![Befehlsverlauf und Ereignisse einer Stele](docs/img/stele-log.png)
+
+### Monitoring
+
+- Zustand und Verfügbarkeit aller Stelen, Hinweise und Störungen oben
+- Stelen-PC über den Agenten: CPU, Arbeitsspeicher, Datenträger, Temperatur
+- Touch-Nutzung (Sitzungen, Dauer, meistgeöffnete Kacheln), Wiedergabeprotokoll, Ereignisse
+- Letzter Screenshot der Stele, Zustand des Servers
+
+![Monitoring: Hinweise und Zustand der Stelen](docs/img/monitoring.png)
+
+![Verfügbarkeit der letzten 24 Stunden](docs/img/monitoring-avail.png)
+
+![Stelen-PC und Touch-Nutzung](docs/img/monitoring-pc.png)
+
+![Wiedergabeprotokoll und Ereignisse](docs/img/monitoring-log.png)
+
+<p>
+  <img src="docs/img/monitoring-screenshot.png" alt="Letzter Screenshot der Stele" width="36%">
+  <img src="docs/img/monitoring-server.png" alt="Server: Version, Laufzeit, Datenbank, Medien, Speicherplatz" width="62%">
+</p>
 
 ### Benutzer, Rollen, Protokoll
 
 - Lokale Konten mit Passwort-Hash, Sitzung und Sperre nach Fehlversuchen
 - Rollen bündeln Rechte pro Funktion; jedes Konto hat genau eine Rolle
-- Protokoll aller Änderungen und Anmeldungen
+- Protokoll aller Änderungen und Anmeldungen, filterbar, als CSV exportierbar
 
-![Rollen und Rechte](docs/img/roles.png)
+<p>
+  <img src="docs/img/users.png" alt="Benutzerliste mit Rolle, Status und letzter Anmeldung" width="62%">
+  <img src="docs/img/user-dialog.png" alt="Benutzer anlegen mit erzeugtem Passwort" width="34%">
+</p>
+
+![Rollen und Rechte bearbeiten](docs/img/roles.png)
+
+![Vergleich aller Rollen: Rechte × Rollen](docs/img/roles-compare.png)
+
+![Protokoll mit Filter und aufgeklapptem Eintrag](docs/img/audit.png)
+
+### Einstellungen und Profil
+
+- Allgemein: Organisation, Zeitzone, Standard-Foliendauer und -Design
+- Sicherheit: Sitzungsdauer, Sperre, Passwortlänge, Schnellanmeldung (Testbetrieb)
+- Medien, Betrieb, System mit Datenbank-Sicherung
+- Profil: eigene Angaben, Passwort, Farbschema, eigene Rechte
+
+<p>
+  <img src="docs/img/settings.png" alt="Einstellungen: Allgemein" width="49%">
+  <img src="docs/img/settings-security.png" alt="Einstellungen: Sicherheit und Testbetrieb" width="49%">
+</p>
+
+<p>
+  <img src="docs/img/settings-system.png" alt="Einstellungen: System und Sicherung" width="49%">
+  <img src="docs/img/profile.png" alt="Profil mit persönlichen Angaben, Passwort und Darstellung" width="49%">
+</p>
 
 ### Player
 
 - Läuft in Chrome (Kiosk) auf dem Stelen-PC, Bühne fest in Stelen-Auflösung
+- Diashow mit Header und Footer; Antippen öffnet das Touch-Menü
 - Kopplung per 6-stelligem Code oder Player-Link mit Schlüssel
 - Offline-Cache: spielt weiter, wenn das CMS nicht erreichbar ist
 - Keine externen CDNs, kein Build-Schritt – alles läuft aus dem Repo
+
+<p>
+  <img src="docs/img/player.png" alt="Player: Diashow mit Header und Laufband" width="24%">
+  <img src="docs/img/player-touch.png" alt="Player: Touch-Menü mit Kacheln" width="24%">
+  <img src="docs/img/player-touch-item.png" alt="Player: geöffneter Inhalt aus dem Touch-Menü" width="24%">
+  <img src="docs/img/player-pairing.png" alt="Player: Kopplungscode einer neuen Stele" width="24%">
+</p>
+
+*Diashow, Touch-Menü, geöffneter Inhalt und Kopplungscode einer neuen Stele.*
+
+### Vorführseite
+
+`/admin/show-stele-index.html` – zum Vorstellen und Ausprobieren, mit derselben Anmeldung:
+
+- **Rundgang:** Kennzahlen, Karte je Bereich mit Stichpunkten und Link, Stele im Player simulieren
+- **Folie anlegen:** Info-Folie gestalten (Live-Vorschau), in neue oder bestehende Präsentation legen, optional veröffentlichen; Angelegtes wieder löschen
+- **UI-Bausteine:** Knöpfe, Status, Formulare, Meldungen, Dialoge, Tabelle, Diagramme mit Beispieldaten
+
+![Vorführseite: Rundgang durch das Backend](docs/img/show-tour.png)
+
+<p>
+  <img src="docs/img/show-create.png" alt="Vorführseite: Info-Folie und Präsentation anlegen" width="49%">
+  <img src="docs/img/show-gallery.png" alt="Vorführseite: UI-Bausteine ausprobieren" width="49%">
+</p>
 
 ## 2. Schnellstart
 
@@ -149,6 +321,9 @@ Eigenes Administratorkonto und Passwörter auf der Kommandozeile:
    ```
 
 3. Der Player zeigt einen 6-stelligen Code → im Assistenten auswählen oder eingeben.
+
+   <img src="docs/img/stele-wizard.png" alt="Assistent „Stele hinzufügen“: Angaben, Koppeln, Standard-Präsentation" width="60%">
+
    Alternativ direkt den Player-Link mit Schlüssel verwenden.
 4. Optional den Stelen-Agenten starten (CPU, RAM, Temperatur, Screenshots):
    [stele_agent/README.md](stele_agent/README.md).
