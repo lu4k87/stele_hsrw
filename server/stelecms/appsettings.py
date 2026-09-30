@@ -20,6 +20,7 @@ DEFAULT_SETTINGS = {
     "retention_days": 30,
     "default_design_id": None,
     "default_slide_duration_s": 10,
+    "stale_after_days": 7,
 }
 
 # Felder, die jeder angemeldete Benutzer lesen darf
@@ -35,6 +36,7 @@ _INT_RANGES = {
     "offline_after_s": (20, 3600),
     "retention_days": (1, 3650),
     "default_slide_duration_s": (2, 600),
+    "stale_after_days": (1, 365),
 }
 
 

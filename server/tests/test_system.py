@@ -94,6 +94,25 @@ def test_dashboard_expiring_items(admin):
     assert exp[0]["presentation"]["id"] == p["id"] and exp[0]["valid_until"] == soon
 
 
+def test_dashboard_stale_presentations(app, admin, autor):
+    txt = make_text(admin)
+    p = make_presentation(admin, "Alt", content_ids=[txt["id"]], publish=True)
+    make_presentation(admin, "Ungenutzt", content_ids=[txt["id"]], publish=True)
+    make_stele(admin, default_presentation_id=p["id"])
+    assert admin.get("/api/dashboard").get_json()["stale"] == []
+    conn = dbm.connect(app.config["DB_PATH"])
+    old = timeutil.iso(timeutil.utcnow() - timedelta(days=10))
+    conn.execute("UPDATE presentations SET published_at = ?", (old,))
+    conn.commit()
+    conn.close()
+    d = admin.get("/api/dashboard").get_json()
+    assert [x["name"] for x in d["stale"]] == ["Alt"] and d["stale_after_days"] == 7
+    assert admin.patch("/api/settings", json={"stale_after_days": 14}).status_code == 200
+    assert admin.get("/api/dashboard").get_json()["stale"] == []
+    assert admin.patch("/api/settings", json={"stale_after_days": 0}).status_code == 422
+    assert autor.patch("/api/settings", json={"stale_after_days": 3}).status_code == 403
+
+
 def test_monitoring_overview_server_block(admin):
     make_image(admin)
     ov = admin.get("/api/monitoring/overview").get_json()

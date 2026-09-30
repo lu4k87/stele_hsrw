@@ -22,7 +22,7 @@ def dashboard():
     resolver = Resolver(conn).load_all()
     tz = resolver.settings["timezone"]
     now = timeutil.utcnow()
-    out = {"steles": None, "reviews": None, "unpublished": None, "expiring": None, "activity": None,
+    out = {"steles": None, "reviews": None, "unpublished": None, "expiring": None, "stale": None, "activity": None,
            "alerts": [], "counts": {}}
 
     if has_any("steles.view", "monitoring.view"):
@@ -55,6 +55,16 @@ def dashboard():
                                   "LEFT JOIN contents c ON c.id = i.content_id "
                                   "WHERE i.enabled = 1 AND i.valid_until IS NOT NULL AND i.valid_until > ? "
                                   "AND i.valid_until <= ? ORDER BY i.valid_until, i.id", (lo, hi))]
+        # Auf Stelen eingeplant (Standard oder aktiver Zeitplan-Eintrag), aber länger nicht neu veröffentlicht
+        days = resolver.settings["stale_after_days"]
+        in_use = {r["pid"] for r in dbm.rows(
+            conn, "SELECT default_presentation_id AS pid FROM steles WHERE default_presentation_id IS NOT NULL "
+                  "UNION SELECT presentation_id FROM schedule_entries WHERE enabled = 1")}
+        cutoff = timeutil.iso(now - timedelta(days=days))
+        out["stale"] = [{"id": p["id"], "name": p["name"], "published_at": p["published_at"]}
+                        for p in sorted((p for p in pres_rows if p["id"] in in_use and p["published_at"]
+                                         and p["published_at"] < cutoff), key=lambda p: p["published_at"])]
+        out["stale_after_days"] = days
 
     if has("audit.view"):
         out["activity"] = [auditm.serialize_entry(r) for r in
