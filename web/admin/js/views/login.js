@@ -4,8 +4,13 @@ import { h, initials } from '../dom.js';
 import { icon } from '../icons.js';
 import { session, login, devLogin } from '../session.js';
 import { ApiError, errorMessage } from '../api.js';
+import { zoomControl, themeToggle } from '../ui/display-controls.js';
+
+let displayControls = [];
 
 export function renderLogin(root, { notice = null, onSuccess } = {}) {
+  displayControls.forEach((c) => c.destroy());
+  displayControls = [zoomControl(), themeToggle()];
   document.title = `Anmelden · ${session.app.name || 'Stele CMS'}`;
 
   const alertBox = h('div', { class: 'alert', role: 'alert', hidden: true });
@@ -135,6 +140,7 @@ export function renderLogin(root, { notice = null, onSuccess } = {}) {
   );
 
   const panel = h('section', { class: 'login__panel' },
+    h('div', { class: 'login__tools', role: 'group', 'aria-label': 'Darstellung' }, displayControls.map((c) => c.el)),
     h('div', { class: 'login__card' },
       h('div', { class: 'login__head' },
         h('h2', {}, 'Anmelden'),

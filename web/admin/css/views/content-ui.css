@@ -105,7 +105,7 @@
 
 /* ---------- Live-Vorschau ---------- */
 .cu-preview { display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; min-width: 0; }
-.cu-preview { --pv-h: max(300px, min(var(--cu-preview-h, 640px), calc(100vh - 220px))); }
+.cu-preview { --pv-h: max(300px, min(var(--cu-preview-h, 640px), calc(calc(100 * var(--vh)) - 220px))); }
 .cu-preview .player-frame { width: min(100%, calc(var(--pv-h) * 9 / 16)); height: auto; }
 .cu-preview__status { min-height: 22px; font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; text-align: center; }
 .cu-preview__status .icon { width: 16px; height: 16px; }

@@ -43,13 +43,13 @@
 .de-side { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); min-width: 0; }
 @media (max-width: 1100px) {
   .de-layout { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: var(--sp-4); }
-  .de-side .cu-preview { --pv-h: min(480px, calc(100vh - 200px)); }
+  .de-side .cu-preview { --pv-h: min(480px, calc(calc(100 * var(--vh)) - 200px)); }
   .de-side .card__body { padding: var(--sp-3); }
 }
 @media (max-width: 760px) {
   .de-layout { grid-template-columns: minmax(0, 1fr); }
   .de-side { position: static; }
-  .de-side .cu-preview { --pv-h: min(520px, 75vh); }
+  .de-side .cu-preview { --pv-h: min(520px, calc(75 * var(--vh))); }
 }
 .de-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-5); }
 .de-ticker { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }

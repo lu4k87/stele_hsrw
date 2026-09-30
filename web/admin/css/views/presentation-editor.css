@@ -15,7 +15,7 @@
 .pe-name__btn span:first-child { overflow-wrap: break-word; } /* ohne min-width: 0, sonst bricht der Name mitten im Wort */
 .pe-name__btn .icon { color: var(--text-2); flex: none; opacity: .8; }
 .pe-name__btn:hover { border-color: var(--border-strong); background: var(--surface); }
-.pe-name__input { font-size: var(--fs-xl); font-weight: var(--fw-semibold); min-width: min(420px, 70vw); }
+.pe-name__input { font-size: var(--fs-xl); font-weight: var(--fw-semibold); min-width: min(420px, calc(70 * var(--vw))); }
 .pe-status { display: inline-flex; }
 
 /* Speicherstatus */
@@ -35,7 +35,7 @@
 }
 @media (min-width: 1400px) {
   .pe-layout { grid-template-columns: minmax(300px, 380px) minmax(280px, 1fr) minmax(340px, 440px); grid-template-areas: "list stage props"; }
-  .pe-props { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); max-height: calc(100vh - var(--topbar-h) - var(--sp-8)); display: flex; flex-direction: column; }
+  .pe-props { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); max-height: calc(calc(100 * var(--vh)) - var(--topbar-h) - var(--sp-8)); display: flex; flex-direction: column; }
   .pe-props > .card__body { overflow-y: auto; min-height: 0; }
 }
 
@@ -69,7 +69,7 @@
 /* ---------- Vorschau ---------- */
 .pe-stage .card__header { padding: var(--sp-3) var(--sp-4); }
 .pe-stage .card__body { padding: var(--sp-4); }
-.pe-stage .cu-preview { --pv-h: max(300px, min(620px, calc(100vh - 330px))); }
+.pe-stage .cu-preview { --pv-h: max(300px, min(620px, calc(calc(100 * var(--vh)) - 330px))); }
 .pe-stage__nav { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); }
 .pe-stage__pos { min-width: 120px; text-align: center; font-size: var(--fs-sm); color: var(--text-2); }
 .pe-stage__empty { text-align: center; padding: var(--sp-8) 0; }

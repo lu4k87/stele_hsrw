@@ -4,6 +4,12 @@
 :root {
   color-scheme: light;
 
+  /* Oberflächen-Zoom (js/zoom.js): Viewport-Einheiten immer über --vh/--vw, damit 100 × --vh
+     auch bei gezoomter Oberfläche genau die Fensterhöhe ergibt */
+  --ui-zoom: 1;
+  --vh: calc(1vh / var(--ui-zoom));
+  --vw: calc(1vw / var(--ui-zoom));
+
   /* Flächen */
   --bg: #f3f5f9;
   --surface: #ffffff;

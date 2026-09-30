@@ -31,13 +31,13 @@
 .tm-side { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); min-width: 0; }
 @media (max-width: 1100px) {
   .tm-layout { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: var(--sp-4); }
-  .tm-side .cu-preview { --pv-h: min(480px, calc(100vh - 200px)); }
+  .tm-side .cu-preview { --pv-h: min(480px, calc(calc(100 * var(--vh)) - 200px)); }
   .tm-side .card__body { padding: var(--sp-3); }
 }
 @media (max-width: 760px) {
   .tm-layout { grid-template-columns: minmax(0, 1fr); }
   .tm-side { position: static; }
-  .tm-side .cu-preview { --pv-h: min(520px, 75vh); }
+  .tm-side .cu-preview { --pv-h: min(520px, calc(75 * var(--vh))); }
 }
 .tm-savestate { font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
 .tm-savestate.is-dirty { color: var(--warning); font-weight: var(--fw-semibold); }

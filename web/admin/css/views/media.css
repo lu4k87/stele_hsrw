@@ -78,7 +78,7 @@
 .md-detail__preview { min-width: 0; }
 .md-detail__frame {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; max-height: 52vh; aspect-ratio: 3 / 4; margin: 0 auto;
+  width: 100%; max-height: calc(52 * var(--vh)); aspect-ratio: 3 / 4; margin: 0 auto;
   background: var(--surface-3); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden;
 }
 .md-detail__frame img, .md-detail__frame video { width: 100%; height: 100%; object-fit: contain; background: #000; }
@@ -86,7 +86,7 @@
 .md-detail__player { width: min(100%, 300px); margin: 0 auto; }
 .md-detail__pages {
   display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
-  max-height: 52vh; overflow-y: auto; padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2);
+  max-height: calc(52 * var(--vh)); overflow-y: auto; padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface-2);
 }
 .md-detail__pages figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .md-detail__pages img { width: 100%; border: 1px solid var(--border); border-radius: var(--r-sm); background: #fff; }

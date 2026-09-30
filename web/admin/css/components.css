@@ -375,17 +375,17 @@
 .dialog {
   padding: 0; border: 0; border-radius: var(--r-xl);
   background: var(--surface); box-shadow: var(--shadow-lg);
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
+  width: min(560px, calc(calc(100 * var(--vw)) - 32px));
+  max-height: calc(calc(100 * var(--vh)) - 48px);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
 .dialog:not([open]) { display: none; }
 .dialog::backdrop { background: var(--scrim); }
-.dialog--sm { width: min(440px, calc(100vw - 32px)); }
-.dialog--lg { width: min(820px, calc(100vw - 32px)); }
-.dialog--xl { width: min(1180px, calc(100vw - 32px)); }
-.dialog--full { width: calc(100vw - 32px); height: calc(100vh - 32px); max-height: none; }
+.dialog--sm { width: min(440px, calc(calc(100 * var(--vw)) - 32px)); }
+.dialog--lg { width: min(820px, calc(calc(100 * var(--vw)) - 32px)); }
+.dialog--xl { width: min(1180px, calc(calc(100 * var(--vw)) - 32px)); }
+.dialog--full { width: calc(calc(100 * var(--vw)) - 32px); height: calc(calc(100 * var(--vh)) - 32px); max-height: none; }
 .dialog[open] { animation: dialog-in .18s var(--ease); }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
 .dialog__header {
@@ -406,8 +406,8 @@
 }
 
 .drawer {
-  margin: 0 0 0 auto; height: 100vh; max-height: 100vh;
-  width: min(var(--drawer-w, 480px), 100vw);
+  margin: 0 0 0 auto; height: calc(100 * var(--vh)); max-height: calc(100 * var(--vh));
+  width: min(var(--drawer-w, 480px), calc(100 * var(--vw)));
   border-radius: var(--r-xl) 0 0 var(--r-xl);
 }
 .drawer[open] { animation: drawer-in .22s var(--ease); }
@@ -416,12 +416,12 @@
 /* ---------- Menü (Aufklappliste) ---------- */
 .menu {
   position: fixed; z-index: 1000;
-  min-width: 220px; max-width: min(340px, calc(100vw - 16px));
+  min-width: 220px; max-width: min(340px, calc(calc(100 * var(--vw)) - 16px));
   padding: 6px; margin: 0;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
   box-shadow: var(--shadow-md);
   display: flex; flex-direction: column;
-  max-height: min(70vh, 520px); overflow-y: auto;
+  max-height: min(calc(70 * var(--vh)), 520px); overflow-y: auto;
 }
 .menu__item {
   display: flex; align-items: center; gap: var(--sp-3);
@@ -445,7 +445,7 @@
 .toast-region {
   position: fixed; z-index: 2000; right: var(--sp-5); bottom: var(--sp-5);
   display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-end;
-  pointer-events: none; max-width: calc(100vw - 32px);
+  pointer-events: none; max-width: calc(calc(100 * var(--vw)) - 32px);
 }
 @media (max-width: 560px) { .toast-region { left: var(--sp-4); right: var(--sp-4); bottom: var(--sp-4); align-items: stretch; } }
 .toast {

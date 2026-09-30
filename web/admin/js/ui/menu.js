@@ -9,6 +9,7 @@
 // items darf auch eine Funktion sein (wird beim Öffnen ausgewertet).
 import { h } from '../dom.js';
 import { icon } from '../icons.js';
+import { getZoom } from '../zoom.js';
 
 let openState = null;
 
@@ -47,16 +48,18 @@ export function openMenu(anchor, items, { align = 'end', focusFirst = true } = {
   }
   document.body.append(menu);
 
-  // Position: unter dem Anker, bei Platzmangel darüber
+  // Position: unter dem Anker, bei Platzmangel darüber. Gerechnet in sichtbaren Pixeln
+  // (Rect, Fenstergröße), gesetzt in CSS-Pixeln – bei gezoomter Oberfläche geteilt durch den Zoom.
+  const z = getZoom();
   const r = anchor.getBoundingClientRect();
-  const mw = menu.offsetWidth;
-  const mh = menu.offsetHeight;
+  const mw = menu.offsetWidth * z;
+  const mh = menu.offsetHeight * z;
   let left = align === 'end' ? r.right - mw : r.left;
   left = Math.max(8, Math.min(left, window.innerWidth - mw - 8));
   let top = r.bottom + 6;
   if (top + mh > window.innerHeight - 8 && r.top - mh - 6 > 8) top = r.top - mh - 6;
-  menu.style.left = `${left}px`;
-  menu.style.top = `${Math.max(8, top)}px`;
+  menu.style.left = `${left / z}px`;
+  menu.style.top = `${Math.max(8, top) / z}px`;
 
   anchor.setAttribute('aria-expanded', 'true');
   const itemsEls = () => [...menu.querySelectorAll('.menu__item:not(:disabled)')];

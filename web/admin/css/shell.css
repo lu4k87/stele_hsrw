@@ -3,13 +3,13 @@
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
 }
 .app.is-collapsed { grid-template-columns: var(--sidebar-w-collapsed) minmax(0, 1fr); }
 
 /* ---------- Seitenleiste ---------- */
 .sidebar {
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: calc(100 * var(--vh));
   display: flex; flex-direction: column;
   background: linear-gradient(180deg, var(--nav-bg) 0%, var(--nav-bg-2) 100%);
   color: var(--nav-text);
@@ -103,6 +103,27 @@
 .crumbs__current { color: var(--text); font-weight: var(--fw-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .topbar__right { display: flex; align-items: center; gap: var(--sp-2); flex: none; }
 
+/* Darstellung: Zoom (− 100 % +) und Hell/Dunkel – im Fluss der Kopfleiste, nichts überlagert */
+.topbar__display { display: flex; align-items: center; gap: var(--sp-1); }
+.zoom-ctl {
+  display: inline-flex; align-items: stretch; height: var(--control-h-sm);
+  border: 1px solid var(--border); border-radius: var(--r-full); background: var(--surface);
+}
+.zoom-ctl button {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; background: none; color: var(--text-2); min-width: 32px; padding: 0 6px;
+}
+.zoom-ctl button:hover:not(:disabled) { color: var(--text); background: var(--surface-hover); }
+.zoom-ctl button:disabled { opacity: .45; }
+.zoom-ctl .zoom-ctl__step:first-child { border-radius: var(--r-full) 0 0 var(--r-full); }
+.zoom-ctl .zoom-ctl__step:last-child { border-radius: 0 var(--r-full) var(--r-full) 0; }
+.zoom-ctl .zoom-ctl__value {
+  min-width: 56px; font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text);
+  border-inline: 1px solid var(--border);
+}
+.zoom-ctl .zoom-ctl__value.is-changed { color: var(--primary-text); }
+.theme-toggle { width: var(--control-h-sm); min-height: var(--control-h-sm); border-radius: var(--r-full); }
+
 .env-badge {
   display: inline-flex; align-items: center; gap: 6px;
   min-height: 32px; padding: 0 12px;
@@ -163,8 +184,8 @@
 @media (max-width: 1023px) {
   .app, .app.is-collapsed { grid-template-columns: minmax(0, 1fr); }
   .sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh;
-    width: min(300px, 86vw);
+    position: fixed; left: 0; top: 0; bottom: 0; height: calc(100 * var(--vh));
+    width: min(300px, calc(86 * var(--vw)));
     transform: translateX(-102%);
     visibility: hidden;
     transition: transform .22s var(--ease), visibility 0s linear .22s;
@@ -187,10 +208,18 @@
   .topbar__menu { display: inline-flex; }
 }
 @media (max-width: 700px) {
+  /* Zoom nur noch als Stufenauswahl; Plus/Minus über Tasten oder Menü */
+  .zoom-ctl .zoom-ctl__step { display: none; }
+  .zoom-ctl .zoom-ctl__value { border-inline: 0; border-radius: var(--r-full); }
   .stele-pill__name { display: none; }
   .env-badge__text { display: none; }
   .env-badge { padding: 0 8px; }
   .user-button > .icon { display: none; }
   .topbar { gap: var(--sp-2); }
   .crumbs > :not(.crumbs__current):not(:last-child) { display: none; }
+}
+@media (max-width: 520px) {
+  /* Sehr schmal: Darstellung steckt im Benutzer-Menü; Brotkrumen entfallen (Seitentitel steht darunter) */
+  .topbar__display, .crumbs { display: none; }
+  .topbar__right { margin-left: auto; }
 }

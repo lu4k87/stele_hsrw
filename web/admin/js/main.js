@@ -11,6 +11,7 @@ import { openPasswordDialog } from './account.js';
 import { page, pageHeader, card, button } from './ui/page.js';
 import { emptyState, errorState } from './ui/empty.js';
 import { toast } from './ui/toast.js';
+import { initZoom } from './zoom.js';
 
 const appEl = document.getElementById('app');
 let shell = null;
@@ -19,6 +20,7 @@ let loginNotice = null;
 let passwordPromptOpen = false;
 
 setRoutes(ROUTES);
+initZoom();
 
 function teardownShell() {
   if (stopIdle) { stopIdle(); stopIdle = null; }

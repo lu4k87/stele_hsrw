@@ -15,6 +15,8 @@ import { page, pageHeader, card } from './ui/page.js';
 import { getThemePref, setThemePref, THEME_OPTIONS } from './theme.js';
 import { openPasswordDialog } from './account.js';
 import { formatRelative } from './format.js';
+import { zoomControl, themeToggle, zoomMenuItems } from './ui/display-controls.js';
+import { formatZoom } from './zoom.js';
 
 const COLLAPSE_KEY = 'stelecms.nav.collapsed';
 const POLL_MS = 20000;
@@ -98,9 +100,14 @@ export function createShell() {
     icon('info', { size: 16 }), h('span', { class: 'env-badge__text' }, 'Testbetrieb · lokal'));
   const stelePill = h('a', { class: 'stele-pill', href: '#/steles', hidden: true });
   const userBtn = h('button', { type: 'button', class: 'user-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
+  const zoomCtl = zoomControl();
+  const themeBtn = themeToggle();
   const topbar = h('header', { class: 'topbar' },
     menuBtn, crumbs,
-    h('div', { class: 'topbar__right' }, envBadge, stelePill, userBtn),
+    h('div', { class: 'topbar__right' },
+      envBadge, stelePill,
+      h('div', { class: 'topbar__display' }, zoomCtl.el, themeBtn.el),
+      userBtn),
   );
 
   envBadge.addEventListener('click', () => openDialog({
@@ -141,6 +148,8 @@ export function createShell() {
       { separator: true },
       { heading: 'Darstellung' },
       ...THEME_OPTIONS.map((t) => ({ label: t.label, icon: t.icon, checked: pref === t.value, onClick: () => setThemePref(t.value) })),
+      { separator: true },
+      { label: 'Zoom', icon: 'zoom-in', hint: formatZoom(), onClick: () => openMenu(userBtn, zoomMenuItems()) },
       { separator: true },
       { label: 'Abmelden', icon: 'log-out', onClick: () => doLogout() },
     ]);
@@ -348,6 +357,8 @@ export function createShell() {
       offNavRefresh();
       offSession();
       offLogoutReq();
+      zoomCtl.destroy();
+      themeBtn.destroy();
       app.remove();
     },
   };

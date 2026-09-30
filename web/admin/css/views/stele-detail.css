@@ -7,7 +7,7 @@
 @media (max-width: 900px) { .sd-overview { grid-template-columns: minmax(0, 1fr); } }
 .sd-live { display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); }
 @media (max-width: 900px) { .sd-live { position: static; } }
-.sd-live .player-frame { width: auto; height: min(740px, 78vh); max-width: 100%; }
+.sd-live .player-frame { width: auto; height: min(740px, calc(78 * var(--vh))); max-width: 100%; }
 .sd-live__note { display: flex; gap: 6px; align-items: flex-start; text-align: left; max-width: 44ch; }
 .sd-live__note .icon { flex: none; margin-top: 2px; }
 .sd-side { display: grid; gap: var(--sp-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; min-width: 0; }
@@ -33,5 +33,5 @@
 .sd-pad { padding: var(--sp-5); }
 
 @media (max-width: 640px) { .sd-hide-sm { display: none; } }
-@media (max-width: 900px) { .sd-live .player-frame { height: min(740px, 62vh); } }
+@media (max-width: 900px) { .sd-live .player-frame { height: min(740px, calc(62 * var(--vh))); } }
 .sd-meters .chart-meter__value { white-space: nowrap; }

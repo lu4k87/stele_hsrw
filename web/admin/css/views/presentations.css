@@ -39,6 +39,6 @@
 
 /* Vorschau-Dialog */
 .pl-prev__body { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
-.pl-prev__body .player-frame { width: min(100%, calc(max(280px, min(calc(100vh - 290px), 900px)) * 9 / 16)); height: auto; }
+.pl-prev__body .player-frame { width: min(100%, calc(max(280px, min(calc(calc(100 * var(--vh)) - 290px), 900px)) * 9 / 16)); height: auto; }
 .pl-prev__controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-2); }
 .pl-prev__pos { min-width: 130px; text-align: center; color: var(--text-2); font-size: var(--fs-sm); }

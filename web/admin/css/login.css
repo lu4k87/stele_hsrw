@@ -1,7 +1,7 @@
 /* Anmeldeseite */
 
 .login {
-  min-height: 100vh;
+  min-height: calc(100 * var(--vh));
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: var(--bg);
@@ -11,7 +11,7 @@
 .login__brand {
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-8);
-  padding: var(--sp-10) clamp(24px, 5vw, 72px);
+  padding: var(--sp-10) clamp(24px, calc(5 * var(--vw)), 72px);
   background:
     radial-gradient(900px 600px at 85% 15%, rgba(116, 174, 255, .20), transparent 60%),
     linear-gradient(160deg, #0f1d33 0%, #13284a 55%, #0c1a30 100%);
@@ -19,7 +19,7 @@
 }
 .login__logo { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-lg); font-weight: var(--fw-bold); }
 .login__claim { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 30ch; }
-.login__claim h1 { color: #fff; font-size: clamp(28px, 3vw, 40px); line-height: 1.15; letter-spacing: -.015em; }
+.login__claim h1 { color: #fff; font-size: clamp(28px, calc(3 * var(--vw)), 40px); line-height: 1.15; letter-spacing: -.015em; }
 .login__claim p { color: #c9d6ea; font-size: var(--fs-md); }
 .login__features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); color: #dbe5f4; }
 .login__features li { display: flex; gap: var(--sp-3); align-items: center; }
@@ -54,8 +54,9 @@
 .mini-stele__base { width: 90px; height: 10px; border-radius: 6px 6px 2px 2px; background: #1d2a40; }
 
 /* Formularseite */
-.login__panel { display: flex; align-items: center; justify-content: center; padding: var(--sp-8) var(--sp-5); }
-.login__card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--sp-6); }
+.login__panel { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); padding: var(--sp-5) var(--sp-5) var(--sp-8); }
+.login__tools { align-self: flex-end; display: flex; align-items: center; gap: var(--sp-1); }
+.login__card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--sp-6); margin-block: auto; }
 .login__head { display: flex; flex-direction: column; gap: var(--sp-2); }
 .login__head h2 { font-size: var(--fs-2xl); }
 .login__head p { color: var(--text-2); }

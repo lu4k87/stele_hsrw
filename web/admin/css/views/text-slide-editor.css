@@ -8,13 +8,13 @@
 .ts-side { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); min-width: 0; }
 @media (max-width: 1100px) {
   .ts-layout { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: var(--sp-4); }
-  .ts-side .cu-preview { --pv-h: min(480px, calc(100vh - 200px)); }
+  .ts-side .cu-preview { --pv-h: min(480px, calc(calc(100 * var(--vh)) - 200px)); }
   .ts-side .card__body { padding: var(--sp-3); }
 }
 @media (max-width: 760px) {
   .ts-layout { grid-template-columns: minmax(0, 1fr); }
   .ts-side { position: static; }
-  .ts-side .cu-preview { --pv-h: min(520px, 75vh); }
+  .ts-side .cu-preview { --pv-h: min(520px, calc(75 * var(--vh))); }
 }
 
 .ts-savestate { font-size: var(--fs-sm); color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
