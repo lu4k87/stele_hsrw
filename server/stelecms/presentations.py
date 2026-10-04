@@ -58,6 +58,7 @@ def summary(conn, p: dict, resolver: Resolver, used_by: dict | None = None) -> d
         "id": p["id"], "name": p["name"], "description": p["description"],
         "status": resolver.status(p), "review_state": p["review_state"], "review_note": p["review_note"],
         "review_by": person(conn, p["review_by"]), "review_at": p["review_at"],
+        "review_changed": review_changed(p, resolver),
         "item_count": len(items), "active_item_count": len(active), "total_duration_s": round(total, 3),
         "design": _ref(resolver.design_row(p["design_id"]), "id", "name"),
         "touch_menu": _ref(resolver.menu_row(p["touch_menu_id"]), "id", "name"),
@@ -161,6 +162,28 @@ def replace_items(conn, pid: int, items: list[dict]) -> None:
             dbm.insert(conn, "presentation_items", values)
 
 
+# ------------------------------------------------------------------ Freigabe
+
+# Freigabe zurücksetzen (Veröffentlichen, Verwerfen, Bearbeiten nach dem Einreichen)
+REVIEW_RESET = "review_state = 'none', review_note = '', review_by = NULL, review_at = NULL, review_hash = NULL"
+
+
+def review_changed(p: dict, resolver: Resolver) -> bool:
+    """Eingereicht, aber der Entwurf weicht seitdem ab (auch über Design, Touch-Menü oder Info-Folie)."""
+    if p["review_state"] != "requested":
+        return False
+    return not p["review_hash"] or resolver.draft_hash(p) != p["review_hash"]
+
+
+def reset_review_if_changed(conn, pid: int) -> bool:
+    """Nach dem Bearbeiten: eingereichte Freigabe zurücksetzen, wenn sich der Entwurf geändert hat."""
+    p = dbm.row(conn, "SELECT * FROM presentations WHERE id = ?", (pid,))
+    if not p or not review_changed(p, Resolver(conn)):
+        return False
+    conn.execute("UPDATE presentations SET " + REVIEW_RESET + " WHERE id = ?", (pid,))
+    return True
+
+
 # ------------------------------------------------------------------ Veröffentlichen
 
 def publish_problems(conn, p: dict, resolver: Resolver) -> tuple[str | None, list[dict]]:
@@ -190,8 +213,7 @@ def publish(conn, p: dict, resolver: Resolver, user_id: int | None) -> dict:
     source = resolver.draft_source(p)
     conn.execute(
         "UPDATE presentations SET published_snapshot = ?, published_source = ?, published_hash = ?, "
-        "published_at = ?, published_by = ?, review_state = 'none', review_note = '', review_by = NULL, "
-        "review_at = NULL WHERE id = ?",
+        "published_at = ?, published_by = ?, " + REVIEW_RESET + " WHERE id = ?",
         (dbm.jdumps(resolved), dbm.jdumps(source), status_hash(resolved), now, user_id, p["id"]))
     return resolved
 
@@ -205,7 +227,8 @@ def discard(conn, p: dict) -> None:
     menu_id = src.get("touch_menu_id")
     if menu_id and dbm.scalar(conn, "SELECT 1 FROM touch_menus WHERE id = ?", (menu_id,)) is None:
         menu_id = None
-    conn.execute("UPDATE presentations SET settings = ?, design_id = ?, touch_menu_id = ? WHERE id = ?",
+    conn.execute("UPDATE presentations SET settings = ?, design_id = ?, touch_menu_id = ?, " + REVIEW_RESET +
+                 " WHERE id = ?",
                  (dbm.jdumps(schemas.merge_defaults(schemas.PRESENTATION_SETTINGS, src.get("settings"))),
                   design_id, menu_id, p["id"]))
     items = [it for it in src.get("items") or []

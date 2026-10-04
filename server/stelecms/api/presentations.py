@@ -12,7 +12,7 @@ from ..errors import ApiError, conflict
 from ..permissions import require
 from ..resolve import Resolver
 from ..validation import Validator, body, is_int
-from .common import get_or_404, list_response, ok
+from .common import check_unchanged, get_or_404, list_response, ok
 from .manifest import manifest_response
 
 bp = Blueprint("api_presentations", __name__, url_prefix="/api")
@@ -144,17 +144,20 @@ def update_presentation(pid: int):
         changes["design_id"] = design_id
     if "touch_menu_id" in data and menu_id != p["touch_menu_id"]:
         changes["touch_menu_id"] = menu_id
-    if changes:
-        user = authm.current_user()
-        fields = sorted(changes)
-        with dbm.transaction(conn):
+    with dbm.transaction(conn):
+        check_unchanged(conn, "presentations", pid, data, f"Die Präsentation {q(p['name'])}")
+        if changes:
+            user = authm.current_user()
+            fields = sorted(changes)
             changes.update({"updated_at": timeutil.now_iso(), "updated_by": user["id"]})
             dbm.update(conn, "presentations", pid, changes)
+            details = {"fields": fields}
+            if pres.reset_review_if_changed(conn, pid):
+                details["review_reset"] = True
             label = name or p["name"]
             summary = (f"hat die Präsentation {q(p['name'])} in {q(name)} umbenannt" if fields == ["name"]
                        else f"hat die Präsentation {q(label)} bearbeitet")
-            audit(conn, "update", "presentation", summary, entity_id=pid, entity_name=label,
-                  details={"fields": fields})
+            audit(conn, "update", "presentation", summary, entity_id=pid, entity_name=label, details=details)
     return _full(conn, pid)
 
 
@@ -171,10 +174,14 @@ def put_items(pid: int):
     v.done()
     before = len(Resolver(conn).items(pid))
     with dbm.transaction(conn):
+        check_unchanged(conn, "presentations", pid, data, f"Die Präsentation {q(p['name'])}")
         pres.replace_items(conn, pid, items)
         _touch(conn, pid)
+        details = {"items_before": before, "items_after": len(items)}
+        if pres.reset_review_if_changed(conn, pid):
+            details["review_reset"] = True
         audit(conn, "update", "presentation", f"hat die Folien der Präsentation {q(p['name'])} geändert",
-              entity_id=pid, entity_name=p["name"], details={"items_before": before, "items_after": len(items)})
+              entity_id=pid, entity_name=p["name"], details=details)
     return _full(conn, pid)
 
 
@@ -191,6 +198,9 @@ def publish(pid: int):
     message, bad = pres.publish_problems(conn, p, resolver)
     if message:
         raise ApiError(422, "validation_error", message, details={"items": bad})
+    if pres.review_changed(p, resolver) and data.get("confirm_changed") is not True:
+        raise conflict("Die Präsentation wurde seit dem Einreichen zur Freigabe geändert (Folien, Design, "
+                       "Touch-Menü oder Inhalte). Bitte den aktuellen Stand prüfen.", "changed_since_review")
     user = authm.current_user()
     with dbm.transaction(conn):
         was = p["published_at"] is not None
@@ -213,7 +223,8 @@ def request_review(pid: int):
     user = authm.current_user()
     with dbm.transaction(conn):
         conn.execute("UPDATE presentations SET review_state = 'requested', review_note = ?, review_by = ?, "
-                     "review_at = ? WHERE id = ?", (note, user["id"], timeutil.now_iso(), pid))
+                     "review_at = ?, review_hash = ? WHERE id = ?",
+                     (note, user["id"], timeutil.now_iso(), Resolver(conn).draft_hash(p), pid))
         audit(conn, "request_review", "presentation",
               f"hat die Freigabe der Präsentation {q(p['name'])} angefragt", entity_id=pid, entity_name=p["name"],
               details={"note": note} if note else {})

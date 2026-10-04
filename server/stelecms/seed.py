@@ -236,10 +236,11 @@ def _seed_demo(app, conn, users: dict, design_id: int) -> None:
         resolver = Resolver(conn)
         for pid in (foyer, evening):
             pres.publish(conn, dbm.row(conn, "SELECT * FROM presentations WHERE id = ?", (pid,)), resolver, admin)
+        summer_hash = resolver.draft_hash(dbm.row(conn, "SELECT * FROM presentations WHERE id = ?", (summer,)))
         conn.execute("UPDATE presentations SET review_state = 'requested', review_note = ?, review_by = ?, "
-                     "review_at = ? WHERE id = ?",
+                     "review_at = ?, review_hash = ? WHERE id = ?",
                      ("Bitte prüfen und veröffentlichen – das Fest ist am letzten Freitag im Juni.", autor, now,
-                      summer))
+                      summer_hash, summer))
         sid = dbm.insert(conn, "steles", {
             "name": "Stele Foyer", "location": "Eingangshalle", "ip_address": "127.0.0.1", "width": 1080,
             "height": 1920, "player_key": secrets.token_urlsafe(32), "default_presentation_id": foyer,

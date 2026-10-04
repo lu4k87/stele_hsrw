@@ -12,7 +12,7 @@ from ..media import content_brief
 from ..permissions import require
 from ..resolve import Resolver
 from ..validation import Validator, body, is_int
-from .common import get_or_404, list_response, ok
+from .common import check_unchanged, get_or_404, list_response, ok
 
 bp = Blueprint("api_touch_menus", __name__, url_prefix="/api/touch-menus")
 
@@ -115,10 +115,11 @@ def update_menu(mid: int):
         changes["name"] = name
     if cfg is not None and cfg != old_cfg:
         changes["config"] = dbm.jdumps(cfg)
-    if changes:
-        user = authm.current_user()
-        fields = sorted(changes)
-        with dbm.transaction(conn):
+    with dbm.transaction(conn):
+        check_unchanged(conn, "touch_menus", mid, data, f"Das Touch-Menü {q(r['name'])}")
+        if changes:
+            user = authm.current_user()
+            fields = sorted(changes)
             changes.update({"updated_at": timeutil.now_iso(), "updated_by": user["id"]})
             dbm.update(conn, "touch_menus", mid, changes)
             label = name or r["name"]

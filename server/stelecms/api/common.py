@@ -4,7 +4,8 @@ from __future__ import annotations
 from flask import jsonify, request
 
 from .. import db as dbm
-from ..errors import ApiError, not_found
+from ..auth import person
+from ..errors import ApiError, conflict, not_found
 
 NOT_FOUND_MSGS = {
     "users": "Dieser Benutzer wurde nicht gefunden. Möglicherweise wurde er gelöscht.",
@@ -24,6 +25,25 @@ def get_or_404(conn, table: str, row_id: int) -> dict:
     if r is None:
         raise not_found(NOT_FOUND_MSGS.get(table, "Der Eintrag wurde nicht gefunden."))
     return r
+
+
+def check_unchanged(conn, table: str, row_id: int, data: dict, label: str) -> None:
+    """Gleichzeitiges Bearbeiten: `expected_updated_at` aus dem Body muss zum gespeicherten Stand passen.
+
+    In der Schreib-Transaktion aufrufen (Stand frisch lesen). Ohne `expected_updated_at` keine Prüfung.
+    ponytail: Zeitstempel auf Sekunden (SPEC §3) – zwei Speicherungen derselben Sekunde fallen nicht auf;
+    Ausbau mit Versionszähler, wenn das in der Praxis vorkommt.
+    """
+    expected = data.get("expected_updated_at")
+    if expected is None:
+        return
+    r = dbm.row(conn, f"SELECT updated_at, updated_by FROM {table} WHERE id = ?", (row_id,))
+    if r is None or expected == r["updated_at"]:
+        return
+    who = person(conn, r["updated_by"])
+    by = f" von {who['display_name']}" if who else ""
+    raise conflict(f"{label} wurde inzwischen{by} geändert – bitte neu laden.", "edit_conflict",
+                   {"updated_at": r["updated_at"], "updated_by": who})
 
 
 def list_response(items: list, total: int | None = None, **extra):

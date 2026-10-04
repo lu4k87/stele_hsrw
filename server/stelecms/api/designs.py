@@ -11,7 +11,7 @@ from ..errors import conflict
 from ..permissions import require
 from ..resolve import Resolver
 from ..validation import Validator, body, is_int
-from .common import get_or_404, list_response, ok
+from .common import check_unchanged, get_or_404, list_response, ok
 
 bp = Blueprint("api_designs", __name__, url_prefix="/api/designs")
 
@@ -93,10 +93,11 @@ def update_design(did: int):
         changes["name"] = name
     if cfg is not None and cfg != old_cfg:
         changes["config"] = dbm.jdumps(cfg)
-    if changes:
-        user = authm.current_user()
-        fields = sorted(changes)
-        with dbm.transaction(conn):
+    with dbm.transaction(conn):
+        check_unchanged(conn, "designs", did, data, f"Das Design {q(r['name'])}")
+        if changes:
+            user = authm.current_user()
+            fields = sorted(changes)
             changes.update({"updated_at": timeutil.now_iso(), "updated_by": user["id"]})
             dbm.update(conn, "designs", did, changes)
             label = name or r["name"]
