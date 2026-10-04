@@ -22,6 +22,8 @@ export const TIMING = Object.freeze({
   mirrorPollMs: 30_000,
   prefetchRepeatMs: 10 * 60_000,
   authFailuresBeforePairing: 3,
+  // Schlüssel erst als entzogen werten, wenn der Server ihn so lange ablehnt (kurze Störung ≠ entkoppelt)
+  authRevokedAfterMs: 10 * 60_000,
 });
 
 export const SLIDESHOW_DEFAULTS = Object.freeze({

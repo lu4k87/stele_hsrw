@@ -156,8 +156,10 @@ async function runNormal() {
   registerServiceWorker();
 
   let authFailures = 0;
+  let firstAuthFailureAt = 0;
   let started = false;
   let pairingActive = false;
+  let pairingAbort = null;
   let manifestLoading = null;
 
   player = new Player({
@@ -171,12 +173,12 @@ async function runNormal() {
     api,
     getState: () => ({ manifest_version: manifestVersion, mode: player.uiMode, current: player.current() }),
     onResponse: (data, rtt) => {
-      authFailures = 0;
+      authOk();
       if (data.server_time) clock.syncServer(data.server_time, rtt);
       if (data.manifest_version && data.manifest_version !== manifestVersion) loadManifest();
       for (const cmd of Array.isArray(data.commands) ? data.commands : []) handleCommand(cmd);
     },
-    onAuthError: () => onAuthFailure(),
+    onAuthError: (status) => onAuthFailure(status),
   });
   errorLog.subscribe((e) => telemetry.error(e));
 
@@ -193,14 +195,14 @@ async function runNormal() {
     manifestLoading = (async () => {
       try {
         const res = await api.get('/api/player/manifest', { etag: manifestVersion, timeoutMs: 20_000 });
-        authFailures = 0;
+        authOk();
         if (res.status === 304) { manifestReceivedAt = Date.now(); return true; }
         if (!validManifest(res.data)) throw new Error('Manifest ungültig');
         if (!store.set('manifest', res.data)) errorLog.report('Manifest konnte nicht lokal gespeichert werden');
         applyManifest(res.data);
         return true;
       } catch (err) {
-        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) onAuthFailure();
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) onAuthFailure(err.status);
         else errorLog.report(`Manifest nicht geladen: ${err.message}`);
         return false;
       } finally {
@@ -210,33 +212,63 @@ async function runNormal() {
     return manifestLoading;
   }
 
-  function onAuthFailure() {
+  function onAuthFailure(status) {
+    // Nur 401 = Schlüssel unbekannt; 403 o. Ä. (z. B. Proxy) ist kein Grund, die Kopplung aufzugeben.
+    if (status !== 401) {
+      errorLog.report(`Server lehnt den Zugriff ab (HTTP ${status})`);
+      return;
+    }
     authFailures += 1;
-    // Ohne gespeicherten Schlüssel sofort koppeln, sonst erst nach mehreren Ablehnungen (Schlüssel entzogen).
-    if (!started || !steleKey || authFailures >= TIMING.authFailuresBeforePairing) startPairing();
+    if (!firstAuthFailureAt) firstAuthFailureAt = Date.now();
+    // Ohne gespeicherten Schlüssel sofort koppeln, sonst erst nach anhaltender Ablehnung (Schlüssel entzogen).
+    const revoked = authFailures >= TIMING.authFailuresBeforePairing
+      && Date.now() - firstAuthFailureAt >= TIMING.authRevokedAfterMs;
+    if (!steleKey || revoked) startPairing();
+  }
+
+  function authOk() {
+    authFailures = 0;
+    firstAuthFailureAt = 0;
+    // Alter Schlüssel gilt wieder (z. B. Server war kurz mit falschem Datenstand gestartet) → Kopplung abbrechen
+    if (pairingActive && steleKey) resumeAfterPairing();
   }
 
   function startPairing() {
     if (pairingActive) return;
     pairingActive = true;
-    steleKey = null;
-    store.remove('key');
-    store.remove('manifest');
-    manifestVersion = null;
+    // Schlüssel und gespeicherten Stand behalten, bis eine neue Kopplung gelingt (Heartbeats prüfen weiter).
     player.touch.close();
     player.show.stop();
     player.activeSig = null;
     boot.hide();
     pairing.show(true);
-    runPairing(api, pairing).then((key) => {
+    const abort = { aborted: false };
+    pairingAbort = abort;
+    runPairing(api, pairing, abort).then((key) => {
+      if (!key || abort.aborted) return;
       steleKey = key;
       store.set('key', key);
+      store.remove('manifest');          // Stand gehört evtl. zu einer anderen Stele
+      manifestVersion = null;
       pairingActive = false;
       authFailures = 0;
+      firstAuthFailureAt = 0;
       pairing.show(false);
       boot.show('Inhalte werden geladen …');
       start();
     });
+  }
+
+  function resumeAfterPairing() {
+    if (pairingAbort) pairingAbort.aborted = true;
+    pairingAbort = null;
+    pairingActive = false;
+    pairing.show(false);
+    // Diashow wurde gestoppt → gespeicherten Stand sofort wieder anwenden, danach normal aktualisieren
+    const cached = store.get('manifest', null);
+    if (validManifest(cached)) applyManifest(cached, true);
+    errorLog.report('Stelen-Schlüssel wieder gültig – Kopplung abgebrochen');
+    start();
   }
 
   async function start() {
@@ -277,8 +309,15 @@ async function runNormal() {
         telemetry.result(cmd.id, true, 'Identifizierung angezeigt');
         break;
       case 'clear_cache':
-        telemetry.result(cmd.id, true, 'Cache geleert, Player neu geladen');
-        clearCaches().finally(() => setTimeout(reloadPage, 300));
+        clearCaches().then(async () => {
+          // Ohne erreichbaren Server bliebe nach dem Neuladen nur Chromes Fehlerseite → dann weiterlaufen.
+          if (await serverReachable()) {
+            telemetry.result(cmd.id, true, 'Medien-Cache geleert, Player neu geladen');
+            setTimeout(reloadPage, 300);
+          } else {
+            telemetry.result(cmd.id, true, 'Medien-Cache geleert; Neuladen ausgelassen (Server nicht erreichbar)');
+          }
+        });
         break;
       case 'screenshot':
         telemetry.result(cmd.id, false, 'Screenshots nimmt der Stelen-Agent auf');
@@ -325,8 +364,9 @@ async function runNormal() {
 }
 
 // Kopplung (SPEC §9.6): Code holen, alle 3 s abfragen; abgelaufen → neuer Code.
-async function runPairing(api, screen) {
+async function runPairing(api, screen, abort) {
   for (;;) {
+    if (abort.aborted) return null;
     let code;
     try {
       screen.setStatus('Code wird angefordert …');
@@ -346,6 +386,7 @@ async function runPairing(api, screen) {
     screen.setStatus('Warten auf Kopplung …');
     for (;;) {
       await sleep(TIMING.pairingPollMs);
+      if (abort.aborted) return null;
       try {
         const res = await api.get(`/api/player/pairing/${encodeURIComponent(code)}`);
         const d = res.data || {};
@@ -394,6 +435,8 @@ function startLivenessCheck() {
 
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+  // Medien-Cache nicht bei Platznot still verwerfen lassen (Offline-Betrieb)
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   navigator.serviceWorker.register('/player/sw.js', { scope: '/player/' })
     .catch((err) => errorLog.report(`Service Worker nicht registriert: ${err.message}`));
 }
@@ -406,12 +449,21 @@ function prefetchAssets(manifest, key) {
   }).catch(() => {});
 }
 
+// Nur Medien – Programmdateien (Shell) und Schlüssel bleiben, damit der Player offline startfähig bleibt.
 async function clearCaches() {
-  store.remove('manifest');
   try {
-    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    if (window.caches) await caches.delete('stelecms-media-v1');
   } catch (err) {
     errorLog.report(`Cache nicht geleert: ${err.message}`);
+  }
+}
+
+async function serverReachable() {
+  try {
+    const res = await fetch('/player/', { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 

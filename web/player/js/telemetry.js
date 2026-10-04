@@ -17,7 +17,15 @@ export class Telemetry {
   // opts: api, getState() → {manifest_version, mode, current}, onResponse(data, rttMs), onAuthError()
   constructor(opts) {
     this.o = opts;
-    this.q = { errors: [], played: [], touch: [], results: store.get('pendingResults', []) || [] };
+    this.q = {
+      errors: [],
+      played: store.get('pendingPlayed', []) || [],
+      touch: store.get('pendingTouch', []) || [],
+      results: store.get('pendingResults', []) || [],
+    };
+    // Statistik aus der Zeit vor dem Neustart ist jetzt im Speicher; gespeicherte Kopie löschen (sonst doppelt)
+    store.remove('pendingPlayed');
+    store.remove('pendingTouch');
     this.bootedAt = performance.now();
     this.timer = null;
     this.inFlight = false;
@@ -34,8 +42,12 @@ export class Telemetry {
     store.set('pendingResults', this.q.results);
   }
 
-  // Vor einem Neustart: offene Ergebnisse sichern (werden nach dem Laden gemeldet).
-  persist() { store.set('pendingResults', this.q.results); }
+  // Vor einem Neustart: offene Ergebnisse und Statistik sichern (werden nach dem Laden gemeldet).
+  persist() {
+    store.set('pendingResults', this.q.results);
+    store.set('pendingPlayed', this.q.played);
+    store.set('pendingTouch', this.q.touch);
+  }
 
   start() {
     if (this.timer) return;
@@ -75,7 +87,7 @@ export class Telemetry {
       if (this.o.onResponse) this.o.onResponse(res.data || {}, performance.now() - t0);
     } catch (err) {
       this.online = false;
-      if (err && (err.status === 401 || err.status === 403) && this.o.onAuthError) this.o.onAuthError();
+      if (err && (err.status === 401 || err.status === 403) && this.o.onAuthError) this.o.onAuthError(err.status);
     } finally {
       this.inFlight = false;
     }
