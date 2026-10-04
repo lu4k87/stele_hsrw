@@ -62,12 +62,14 @@ export class Player {
       onOpen: () => {
         this.show.pause();
         this.frame.setHidden(false, 250);
+        this.frame.setTickerPaused(true);
         this.emitState();
       },
       onClose: () => {
         if (!this.userPaused && !this.night) this.show.play();
         const cur = this.show.current;
         this.frame.setHidden(Boolean(cur && cur.slide.fullscreen), 250);
+        this.frame.setTickerPaused(false);
         this.emitState();
       },
       onEvent: (ev) => this.o.onTouchEvent && this.o.onTouchEvent(ev),

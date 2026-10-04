@@ -45,7 +45,19 @@ export class Frame {
     this.tickerAnim = null;
     this.clockEls = null;
     this.hidden = false;
+    this.tickerPaused = false;
+    this.headerRefit = null;
     onMinute(() => this.updateClock());
+    // Kopfzeile bei Breitenänderung (Fenster, Bühnen-Skalierung) neu einpassen – nur Breite, sonst Schleife
+    if ('ResizeObserver' in window) {
+      let width = 0;
+      new ResizeObserver(([entry]) => {
+        const w = Math.round(entry.contentRect.width);
+        if (w === width) return;
+        width = w;
+        if (this.headerRefit) this.headerRefit();
+      }).observe(this.header);
+    }
   }
 
   setContext({ timezone, feeds } = {}) {
@@ -81,6 +93,7 @@ export class Frame {
     const el = this.header;
     el.replaceChildren();
     this.clockEls = null;
+    this.headerRefit = null;
     el.classList.toggle('is-absent', !cfg);
     if (!cfg) return;
     const height = headerHeight(this.design);
@@ -114,6 +127,7 @@ export class Frame {
     else el.append(...[logo, titles, clockBox].filter(Boolean));
     this.updateClock();
     // Nach dem Layout (und nach Logo/Schriften) Titel einzeilig einpassen.
+    this.headerRefit = refit;
     refit();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit).catch(() => {});
   }
@@ -161,6 +175,7 @@ export class Frame {
         [{ transform: 'translate3d(0,0,0)' }, { transform: `translate3d(${-width}px,0,0)` }],
         { duration: (width / speed) * 1000, iterations: Infinity, easing: 'linear' },
       );
+      if (this.tickerPaused) this.tickerAnim.pause();
     };
     const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     fontsReady.then(() => requestAnimationFrame(start)).catch(start);
@@ -178,6 +193,14 @@ export class Frame {
     const { time, date, format } = this.clockEls;
     if (time) time.textContent = formatTime(now, this.timezone);
     if (date) date.textContent = formatDate(now, this.timezone, format);
+  }
+
+  // Touch-Modus: Laufschrift anhalten (WCAG 2.2.2 – bewegter Text neben der Bedienung).
+  setTickerPaused(paused) {
+    this.tickerPaused = Boolean(paused);
+    if (!this.tickerAnim) return;
+    if (this.tickerPaused) this.tickerAnim.pause();
+    else this.tickerAnim.play();
   }
 
   // Vollbild-Folie: Header/Footer weich aus-/einblenden (Dauer = Übergang).
