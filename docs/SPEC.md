@@ -97,8 +97,12 @@ CMS_STELE_KIOSK/
   - `draft` – noch nie veröffentlicht
   - `published` – Entwurf == veröffentlichter Stand (Hash gleich)
   - `changed` – veröffentlicht, aber Entwurf weicht ab (auch wenn nur Design/Touch-Menü/Info-Folie geändert wurde)
-- Freigabe (`review_state`): `none` · `requested` (Autor ohne Veröffentlichungsrecht hat eingereicht) · `rejected` (mit Begründung). Veröffentlichen setzt `none`.
+- Freigabe (`review_state`): `none` · `requested` (Autor ohne Veröffentlichungsrecht hat eingereicht) · `rejected` (mit Begründung). Veröffentlichen und „Änderungen verwerfen“ setzen `none` (Notiz, Person, Zeit, Hash leer).
+- Vier-Augen-Prinzip: Beim Einreichen speichert der Server den Status-Hash des Entwurfs (`review_hash`).
+  - Ändert danach jemand Folien oder Einstellungen der Präsentation so, dass der Hash abweicht, wird die Freigabe auf `none` zurückgesetzt (Umbenennen/Beschreibung allein nicht) → erneut einreichen. Protokoll: `details.review_reset`.
+  - Ändert sich der Entwurf nur indirekt (Design, Touch-Menü, Info-Folie), bleibt `requested`, aber `review_changed` ist `true`; Veröffentlichen → 409 `changed_since_review`, bis die veröffentlichende Person mit `confirm_changed: true` bestätigt, den aktuellen Stand geprüft zu haben.
 - „Änderungen verwerfen“: Entwurf (Einstellungen, Folien, Design-/Touch-Zuordnung) auf den Stand der letzten Veröffentlichung zurücksetzen (`published_source`).
+- Gleichzeitiges Bearbeiten: Editoren senden bei PATCH/PUT `expected_updated_at` (zuletzt geladenes `updated_at`); weicht der gespeicherte Stand ab → 409 `edit_conflict` „… wurde inzwischen von X geändert – bitte neu laden“ (`details.updated_at`, `details.updated_by`), nichts wird gespeichert. Ohne das Feld keine Prüfung. Grenze: Zeitstempel auf Sekunden.
 
 ### Zeitangaben
 - Ereignis-Zeitstempel: UTC, ISO 8601 mit `Z`, Sekunden: `2026-09-30T08:15:00Z`.
@@ -183,6 +187,7 @@ CREATE TABLE presentations (
   review_note TEXT NOT NULL DEFAULT '',
   review_by INTEGER REFERENCES users(id) ON DELETE SET NULL,   -- wer eingereicht bzw. abgelehnt hat
   review_at TEXT,
+  review_hash TEXT,                             -- Status-Hash beim Einreichen (Migration 0002)
   created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL
@@ -494,7 +499,7 @@ Effektive Rechte = gesetzte Rechte ∪ enthaltene (transitiv). Administrator (`i
 - JSON rein/raus (`application/json; charset=utf-8`), IDs sind Integer.
 - Listen: `{"items": [...], "total": n}`.
 - Fehler: HTTP-Status + `{"error": {"code": "…", "message": "Deutscher Satz für Menschen", "fields": {"feld": "Meldung"}, "details": {…}}}`.
-  Codes: `unauthenticated` 401 · `invalid_credentials` 401 · `forbidden` 403 · `account_disabled` 403 · `self_protection` 403 · `role_locked` 403 · `not_found` 404 · `conflict`/`in_use`/`last_admin`/`role_in_use` 409 · `expired` 410 · `too_large` 413 · `unsupported_media` 415 · `validation_error` 422 · `account_locked` 423 (`details.retry_after_s`) · `rate_limited` 429 · `server_error` 500 · `insufficient_storage` 507.
+  Codes: `unauthenticated` 401 · `invalid_credentials` 401 · `forbidden` 403 · `account_disabled` 403 · `self_protection` 403 · `role_locked` 403 · `not_found` 404 · `conflict`/`in_use`/`last_admin`/`role_in_use`/`edit_conflict`/`changed_since_review` 409 · `expired` 410 · `too_large` 413 · `unsupported_media` 415 · `validation_error` 422 · `account_locked` 423 (`details.retry_after_s`) · `rate_limited` 429 · `server_error` 500 · `insufficient_storage` 507.
 - Personen-Verweis überall: `{"id": 1, "display_name": "Alex Admin"}` oder `null`.
 - **CSRF:** alle ändernden Methoden auf `/api/` (außer `/api/auth/login`, `/api/auth/dev-login`, `/api/player/*`, `/api/agent/*`) brauchen Header `X-CSRF-Token` = Token aus der Sitzung; sonst 403 `forbidden` („Sicherheitsprüfung fehlgeschlagen – Seite neu laden“).
 - Jede ändernde Aktion schreibt einen Protokolleintrag (§4 audit_log).
@@ -589,12 +594,12 @@ usages = [{"type": "presentation"|"design"|"touch_menu"|"content", "id", "name",
 | GET | `/api/presentations` | presentations.view | → `{items: [PresentationSummary], total}` |
 | POST | `/api/presentations` | presentations.edit | `{name, description?, design_id?, touch_menu_id?, copy_from?}` → `Presentation` (Design-Standard: `settings.default_design_id` bzw. erstes Design) |
 | GET | `/api/presentations/<id>` | presentations.view | → `Presentation` |
-| PATCH | `/api/presentations/<id>` | presentations.edit | `{name?, description?, settings?, design_id?, touch_menu_id?}` → `Presentation` |
-| PUT | `/api/presentations/<id>/items` | presentations.edit | `{items: [{id?, content_id, enabled, duration_s, transition, valid_from, valid_until, caption, options}]}` → `Presentation` (Reihenfolge = Array) |
-| POST | `/api/presentations/<id>/publish` | presentations.publish | `{note?}` → `Presentation`; 422, wenn keine aktive Folie oder ein aktiver Inhalt nicht `ready` ist (`details.items`) |
-| POST | `/api/presentations/<id>/request-review` | presentations.edit | `{note?}` → `Presentation` |
+| PATCH | `/api/presentations/<id>` | presentations.edit | `{name?, description?, settings?, design_id?, touch_menu_id?, expected_updated_at?}` → `Presentation`; 409 `edit_conflict` (§3) |
+| PUT | `/api/presentations/<id>/items` | presentations.edit | `{items: [{id?, content_id, enabled, duration_s, transition, valid_from, valid_until, caption, options}], expected_updated_at?}` → `Presentation` (Reihenfolge = Array); 409 `edit_conflict` |
+| POST | `/api/presentations/<id>/publish` | presentations.publish | `{note?, confirm_changed?}` → `Presentation`; 422, wenn keine aktive Folie oder ein aktiver Inhalt nicht `ready` ist (`details.items`); 409 `changed_since_review`, wenn eingereicht und seitdem geändert (§3) |
+| POST | `/api/presentations/<id>/request-review` | presentations.edit | `{note?}` → `Presentation` (speichert `review_hash`) |
 | POST | `/api/presentations/<id>/reject` | presentations.publish | `{note}` (Pflicht) → `Presentation` |
-| POST | `/api/presentations/<id>/discard` | presentations.edit | → `Presentation`; 409, wenn nie veröffentlicht |
+| POST | `/api/presentations/<id>/discard` | presentations.edit | → `Presentation` (Freigabe → `none`); 409, wenn nie veröffentlicht |
 | DELETE | `/api/presentations/<id>` | presentations.delete | → `{ok}`; 409 `in_use`, wenn Standard einer Stele oder im Zeitplan (`details.usages`) |
 | GET | `/api/presentations/<id>/manifest?source=draft|published` | presentations.view | → Manifest (§8) für die Vorschau |
 
@@ -603,6 +608,7 @@ PresentationSummary = {
   "id", "name", "description",
   "status": "draft|published|changed", "review_state": "none|requested|rejected", "review_note",
   "review_by": Person, "review_at",
+  "review_changed": bool,                                          // eingereicht, Entwurf weicht seitdem ab (§3)
   "item_count", "active_item_count", "total_duration_s",          // Summe effektiver Dauern aktiver Folien (Video: Länge)
   "design": {"id", "name"} | null, "touch_menu": {"id", "name"} | null,
   "used_by": [{"stele_id", "stele_name", "how": "default|schedule"}],
@@ -637,9 +643,9 @@ Hintergrund-Abfragen der UI senden `X-Background-Poll: 1` – sie verlängern di
 |---|---|---|
 | GET | `/api/designs`, `/api/designs/<id>` | presentations.view |
 | POST | `/api/designs` `{name, config?, copy_from?}` | designs.edit |
-| PATCH | `/api/designs/<id>` `{name?, config?}` | designs.edit |
+| PATCH | `/api/designs/<id>` `{name?, config?, expected_updated_at?}` (409 `edit_conflict`, §3) | designs.edit |
 | DELETE | `/api/designs/<id>` (409 `in_use`, wenn Präsentationen es nutzen) | designs.edit |
-| GET/POST/PATCH/DELETE | `/api/touch-menus[/<id>]` analog | presentations.view / touch.edit |
+| GET/POST/PATCH/DELETE | `/api/touch-menus[/<id>]` analog (PATCH mit `expected_updated_at?`) | presentations.view / touch.edit |
 
 `Design = {id, name, config (vollständig), logo_url: str|null, used_by: [{id, name, status}], created_at, updated_at, updated_by: Person}`
 `TouchMenu = {id, name, config (vollständig, Kacheln mit „content“: {id, type, title, thumb_url} zur Anzeige ergänzt), used_by: [...], created_at, updated_at, updated_by}` – beim Speichern wird nur `config` in der Form von §5.6 übernommen (ergänzte Felder ignorieren).
@@ -812,6 +818,7 @@ Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 - Heartbeat alle 15 s (`POST /api/player/heartbeat`), Antwort enthält `manifest_version` (weicht sie ab → Manifest neu laden) und `commands`.
 - Befehle: `reload` (neu laden), `identify` (10 s Vollbild-Overlay mit Stelen-Name/Standort, pulsierender Rahmen), `clear_cache` (nur Medien-Cache löschen; Programmdateien, Schlüssel und gespeichertes Manifest bleiben; neu laden nur, wenn der Server erreichbar ist). Ergebnis im nächsten Heartbeat (`command_results`).
 - Zustellung (Player und Agent): offene Befehle verfallen nach 10 min ohne Bestätigung (`result` „Fehler: abgelaufen …“); zugestellt, aber nach 3 min ohne Ergebnis → erneut zustellen (Player und Agent führen jede ID nur einmal aus).
+- Admin: Stele mit Status `never` → Player-Befehle gesperrt, Grund sichtbar (Screenshot über den Agenten bleibt möglich); `offline` → Hinweis „wird beim nächsten Kontakt ausgeführt, verfällt nach 10 Min.“.
 - Statistik (`played`, `touch`) und offene Ergebnisse überstehen einen Neustart des Players (localStorage).
 - Diagnose: 5× schnell in die linke obere Ecke (150 × 150 px) tippen → Info-Overlay (Version, Stele, Schlüssel-Ende, Manifest-Version/-Alter, online/offline, Bildschirm, aktuelle Folie, letzte Fehler), schließt nach 30 s.
 - `PLAYER_VERSION = "1.0.0"`.
@@ -868,7 +875,8 @@ Server: `last_seen_at`, `last_state` aktualisieren; Online-Segment verlängern (
 - Zerstörende Aktionen: Bestätigungsdialog mit eindeutiger Beschriftung („Präsentation löschen“), Folgen benennen („wird auf 1 Stele verwendet“).
 - Rückmeldung: Speichern-Status sichtbar, Toasts für Erfolg, Fehlermeldungen am Feld + verständlich (was ist passiert, was tun).
 - Leere Zustände erklären und bieten die nächste Aktion an. Ladezustände als Skelett.
-- Ungespeicherte Änderungen: Warnung beim Verlassen.
+- Ungespeicherte Änderungen: Warnung beim Verlassen. Speichern-Konflikt (409 `edit_conflict`): Hinweis mit „Neu laden“, kein automatisches Überschreiben; Editoren übernehmen die Server-Antwort nur, wenn sich lokal während des Speicherns nichts geändert hat.
+- Verbindung: Anfragen brechen nach 20 s ab (`ApiError` `timeout`); nach 2 fehlgeschlagenen Hintergrund-Abrufen in Folge zeigt die Kopfleiste „Verbindung unterbrochen – Stand hh:mm“, bis ein Abruf wieder gelingt. Polls laufen nie doppelt.
 - Fehlende Rechte: Aktion ausblenden; wo die Aktion erwartbar ist (z. B. Veröffentlichen), stattdessen die erlaubte Alternative zeigen („Zur Freigabe einreichen“).
 - Responsiv von 1920 px bis Tablet (768 px), nutzbar bis 390 px; kein waagrechtes Scrollen der Seite.
 - Hell und Dunkel.

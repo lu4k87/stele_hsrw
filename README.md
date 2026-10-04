@@ -119,6 +119,8 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 - **Design** (Rahmen) und **Touch-Menü** je Präsentation
 - Bearbeitet wird der Entwurf; an die Stele geht nur der **veröffentlichte** Stand
 - Freigabe: Autoren reichen ein, Redaktion veröffentlicht oder lehnt mit Begründung ab
+- Vier-Augen-Prinzip abgesichert: Bearbeiten nach dem Einreichen setzt die Freigabe zurück; wurde der Stand seit dem Einreichen geändert (z. B. Design), fragt das Veröffentlichen nach
+- Gleichzeitiges Bearbeiten: speichert jemand anderes zwischendurch, erscheint „von X geändert – neu laden“ statt stillem Überschreiben
 
 ![Präsentationen mit Status, Folienzahl, Dauer, Design und Verwendung](docs/img/presentations.png)
 
