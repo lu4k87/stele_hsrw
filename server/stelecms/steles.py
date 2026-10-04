@@ -14,6 +14,25 @@ COMMAND_LABELS = {"reload": "Neu laden", "identify": "Identifizieren", "screensh
                   "clear_cache": "Zwischenspeicher leeren"}
 PLAYER_COMMANDS = ("reload", "identify", "clear_cache")
 AGENT_COMMANDS = ("screenshot",)
+COMMAND_TTL_S = 10 * 60        # nicht zugestellte Befehle verfallen (Stele lange offline → kein Neustart Tage später)
+COMMAND_REDELIVER_S = 3 * 60   # zugestellt, aber kein Ergebnis (Antwort verloren) → erneut zustellen
+
+
+def deliver_commands(conn, sid: int, kinds: tuple, now: str) -> list[dict]:
+    """Offene Befehle für Player bzw. Agent; beide führen jede ID nur einmal aus (Wiederholung ist sicher)."""
+    now_dt = timeutil.parse_iso(now) or timeutil.utcnow()
+    expired = timeutil.iso(now_dt - timedelta(seconds=COMMAND_TTL_S))
+    redeliver = timeutil.iso(now_dt - timedelta(seconds=COMMAND_REDELIVER_S))
+    marks = ",".join("?" for _ in kinds)
+    conn.execute(f"UPDATE stele_commands SET done_at = ?, result = 'Fehler: abgelaufen – Stele hat den Befehl nicht "
+                 f"rechtzeitig bestätigt' WHERE stele_id = ? AND done_at IS NULL AND created_at < ? "
+                 f"AND command IN ({marks})", (now, sid, expired, *kinds))
+    rows = dbm.rows(conn, f"SELECT * FROM stele_commands WHERE stele_id = ? AND done_at IS NULL "
+                          f"AND (delivered_at IS NULL OR delivered_at < ?) AND command IN ({marks}) ORDER BY id",
+                    (sid, redeliver, *kinds))
+    for r in rows:
+        conn.execute("UPDATE stele_commands SET delivered_at = ? WHERE id = ?", (now, r["id"]))
+    return [{"id": r["id"], "command": r["command"], "payload": dbm.jloads(r["payload"], {})} for r in rows]
 MANIFEST_OUTDATED_S = 300
 
 

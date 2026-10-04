@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import http.client
 import json
 import logging
 import re
@@ -10,6 +11,7 @@ import shutil
 import socket
 import struct
 import subprocess
+import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -17,7 +19,7 @@ from pathlib import Path
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from . import db as dbm
-from . import schemas, timeutil
+from . import schemas, security, timeutil
 from .auth import person
 from .validation import is_http_url, is_int
 
@@ -36,6 +38,7 @@ PDF_PAGE_WIDTH = 1080
 STAGE_W, STAGE_H = 1080, 1920
 
 Image.MAX_IMAGE_PIXELS = 200_000_000  # große Fotos erlauben, echte „Bomben“ abweisen
+_IMAGE_SLOTS = threading.BoundedSemaphore(2)
 
 
 class UnsupportedFile(Exception):
@@ -280,8 +283,6 @@ def video_compatible(info: dict) -> bool:
 def run_ffmpeg_progress(cmd: list[str], duration: float | None, on_progress,
                         timeout: float = 6 * 3600) -> tuple[int, str]:
     """ffmpeg mit `-progress pipe:1`; ruft on_progress(0..100) auf. Rückgabe (returncode, stderr)."""
-    import threading
-    import time
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     err_chunks: list[bytes] = []
@@ -292,7 +293,10 @@ def run_ffmpeg_progress(cmd: list[str], duration: float | None, on_progress,
                 err_chunks.append(chunk)
     t = threading.Thread(target=_drain, daemon=True)
     t.start()
-    started = time.monotonic()
+    # Zeitgrenze unabhängig von der Ausgabe: ein stummes, hängendes ffmpeg blockiert sonst den Job-Thread
+    killer = threading.Timer(timeout, proc.kill)
+    killer.daemon = True
+    killer.start()
     for raw in proc.stdout:
         line = raw.decode("ascii", "replace").strip()
         if duration and (line.startswith("out_time_us=") or line.startswith("out_time_ms=")):
@@ -301,10 +305,8 @@ def run_ffmpeg_progress(cmd: list[str], duration: float | None, on_progress,
             except ValueError:
                 continue
             on_progress(max(0, min(99, int(us / 1_000_000 / duration * 100))))
-        if time.monotonic() - started > timeout:
-            proc.kill()
-            break
     proc.wait()
+    killer.cancel()
     t.join(timeout=5)
     return proc.returncode, b"".join(err_chunks).decode("utf-8", "replace")[-2000:]
 
@@ -374,7 +376,8 @@ def import_file(conn, media_dir: Path, tmp_path: Path, original_name: str, *, ta
     title = title or title_from_filename(original_name)
     try:
         if info["type"] == "image":
-            res = process_image(original, folder)
+            with _IMAGE_SLOTS:  # große Fotos brauchen beim Dekodieren bis ~1 GB RAM → nicht 16 parallel
+                res = process_image(original, folder)
             cid = insert_content(conn, ctype="image", title=title, tags=tags, user_id=user_id, uid=uid,
                                  data={"display_file": res["display_file"], "original_file": original.name},
                                  width=res["width"], height=res["height"], **base)
@@ -613,16 +616,17 @@ def check_url(url: str) -> dict:
         "User-Agent": "Mozilla/5.0 (SteleCMS Einbettungsprüfung)", "Accept": "text/html,*/*;q=0.8"})
     status = 0
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 (nur http/https, s. o.)
+        with security.open_outbound(req, timeout=5) as resp:
             headers, status = resp.headers, resp.status
-            body = resp.read(512 * 1024)
+            body = security.read_limited(resp, 512 * 1024, 10)
     except urllib.error.HTTPError as exc:
         headers, status = exc.headers, exc.code
         try:
             body = exc.read(512 * 1024)
         except Exception:  # noqa: BLE001
             body = b""
-    except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, ValueError, OSError):
+    except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, ValueError, OSError,
+            http.client.HTTPException):
         return {"ok": False, "embeddable": None, "title": None,
                 "message": "Seite nicht erreichbar – später erneut prüfen."}
     embeddable, message = analyze_frame_headers(headers)

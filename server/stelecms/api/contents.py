@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import secrets
+import shutil
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request
@@ -23,6 +24,7 @@ TYPE_LABELS = {"image": "das Bild", "video": "das Video", "pdf": "das PDF", "tex
 SORTS = {"updated_desc": "updated_at DESC, id DESC", "created_desc": "created_at DESC, id DESC",
          "title_asc": "title COLLATE NOCASE ASC, id ASC", "size_desc": "COALESCE(size_bytes, 0) DESC, id DESC"}
 MAX_FILES_PER_REQUEST = 50
+DISK_RESERVE_BYTES = 1024 ** 3  # 1 GB bleibt immer frei
 
 
 def _media_dir() -> Path:
@@ -107,6 +109,11 @@ def upload():
     user = authm.current_user()
     tmp_dir = _media_dir() / ".tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
+    # Platz für die Kopie in der Mediathek + Reserve, damit Datenbank, Heartbeats und Sitzungen weiterlaufen
+    need = (request.content_length or 0) + DISK_RESERVE_BYTES
+    if shutil.disk_usage(tmp_dir).free < need:
+        raise ApiError(507, "insufficient_storage", "Auf dem Server ist nicht genug Speicherplatz frei. "
+                                                    "Bitte nicht mehr benötigte Inhalte löschen.")
     created, errors, need_jobs = [], [], False
     for f in files:
         name = media.safe_file_name(f.filename)
@@ -280,10 +287,11 @@ def _in_use_message(r: dict, usages: list) -> str:
 def delete_content(cid: int):
     conn = dbm.get_db()
     r = get_or_404(conn, "contents", cid)
-    usages = media.UsageIndex(conn).usages(cid)
-    if usages:
-        raise conflict(_in_use_message(r, usages), "in_use", {"usages": usages})
+    # Prüfung in der Schreib-Transaktion: sonst kann dazwischen ein Stand mit diesem Inhalt veröffentlicht werden
     with dbm.transaction(conn):
+        usages = media.UsageIndex(conn).usages(cid)
+        if usages:
+            raise conflict(_in_use_message(r, usages), "in_use", {"usages": usages})
         _delete_one(conn, r)
     media.delete_files(_media_dir(), r["uid"])
     return ok()

@@ -17,6 +17,7 @@ from .manifest import manifest_response
 bp = Blueprint("api_player", __name__, url_prefix="/api/player")
 
 PAIRING_TTL_MIN = 10
+PAIRING_REDELIVER_S = 30  # Nachfrist nach der ersten Auslieferung des Schlüssels (verlorene Antwort)
 MAX_ERRORS, MAX_PLAYED, MAX_TOUCH, MAX_RESULTS = 20, 500, 500, 50
 TOUCH_EVENTS = ("session_start", "tile_open", "session_end")
 
@@ -41,8 +42,14 @@ def _int(value):
 
 
 def _ts(value, fallback: str) -> str:
+    """Zeitstempel der Player-Uhr; unplausibel (> 1 Tag daneben, z. B. falsche Uhr) → Serverzeit.
+
+    Sonst fallen Zeilen nie unter die Aufbewahrungsfrist und verzerren die Statistik.
+    """
     dt = timeutil.parse_iso(value) if isinstance(value, str) else None
-    return timeutil.iso(dt) if dt else fallback
+    if dt is None or abs((dt - timeutil.utcnow()).total_seconds()) > 86400:
+        return fallback
+    return timeutil.iso(dt)
 
 
 def _screen(value) -> dict | None:
@@ -82,18 +89,30 @@ def pairing_start():
 
 @bp.get("/pairing/<code>")
 def pairing_status(code: str):
+    # Drossel gegen Durchprobieren der Codes (der Schlüssel steckt in der Antwort)
+    retry = current_app.extensions["stelecms_limiters"]["pairing_poll"].check_and_hit(client_ip())
+    if retry:
+        raise ApiError(429, "rate_limited", "Zu viele Abfragen. Bitte kurz warten.",
+                       details={"retry_after_s": int(retry)})
     conn = dbm.get_db()
     r = dbm.row(conn, "SELECT * FROM pairing_requests WHERE code = ?", (code,)) if code.isdigit() else None
     if r is None:
         # Unbekannt (z. B. bereits aufgeräumt) = abgelaufen → Player holt einen neuen Code
         return jsonify({"status": "expired"})
+    now = timeutil.utcnow()
+    expired = (timeutil.parse_iso(r["expires_at"]) or now) <= now
     if r["claimed_at"] and r["stele_id"]:
         s = dbm.row(conn, "SELECT * FROM steles WHERE id = ?", (r["stele_id"],))
-        if s is None:
+        if s is None or expired:
             return jsonify({"status": "expired"})
+        # Schlüssel nur einmal ausliefern: danach bleibt er nur noch kurz abrufbar (Antwort verloren → Wiederholung)
+        redeliver_until = timeutil.iso(now + timedelta(seconds=PAIRING_REDELIVER_S))
+        with dbm.transaction(conn):
+            conn.execute("UPDATE pairing_requests SET expires_at = ? WHERE code = ? AND expires_at > ?",
+                         (redeliver_until, code, redeliver_until))
         resp = jsonify({"status": "paired", "key": s["player_key"], "stele": {"id": s["id"], "name": s["name"]}})
         return steles.set_key_cookie(resp, s["player_key"])
-    if (timeutil.parse_iso(r["expires_at"]) or timeutil.utcnow()) <= timeutil.utcnow():
+    if expired:
         return jsonify({"status": "expired"})
     return jsonify({"status": "waiting"})
 
@@ -139,7 +158,7 @@ def heartbeat():
         conn.execute("UPDATE steles SET last_seen_at = ?, last_state = ? WHERE id = ?",
                      (now, dbm.jdumps(state), s["id"]))
         _store_lists(conn, s["id"], data, now)
-        commands = _deliver_commands(conn, s["id"], steles.PLAYER_COMMANDS, now)
+        commands = steles.deliver_commands(conn, s["id"], steles.PLAYER_COMMANDS, now)
     return jsonify({"manifest_version": current_version, "commands": commands, "server_time": now})
 
 
@@ -178,11 +197,3 @@ def apply_command_results(conn, sid: int, results, now: str) -> None:
         if cur.rowcount and not ok:
             steles.add_event(conn, sid, "warning", "command", f"Befehl fehlgeschlagen: {msg}",
                              {"command_id": r["id"]}, ts=now)
-
-
-def _deliver_commands(conn, sid: int, kinds: tuple, now: str) -> list[dict]:
-    rows = dbm.rows(conn, "SELECT * FROM stele_commands WHERE stele_id = ? AND delivered_at IS NULL AND command IN "
-                          f"({','.join('?' for _ in kinds)}) ORDER BY id", (sid, *kinds))
-    for r in rows:
-        conn.execute("UPDATE stele_commands SET delivered_at = ? WHERE id = ?", (now, r["id"]))
-    return [{"id": r["id"], "command": r["command"], "payload": dbm.jloads(r["payload"], {})} for r in rows]

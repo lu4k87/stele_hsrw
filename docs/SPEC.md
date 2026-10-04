@@ -494,7 +494,7 @@ Effektive Rechte = gesetzte Rechte ∪ enthaltene (transitiv). Administrator (`i
 - JSON rein/raus (`application/json; charset=utf-8`), IDs sind Integer.
 - Listen: `{"items": [...], "total": n}`.
 - Fehler: HTTP-Status + `{"error": {"code": "…", "message": "Deutscher Satz für Menschen", "fields": {"feld": "Meldung"}, "details": {…}}}`.
-  Codes: `unauthenticated` 401 · `invalid_credentials` 401 · `forbidden` 403 · `account_disabled` 403 · `self_protection` 403 · `role_locked` 403 · `not_found` 404 · `conflict`/`in_use`/`last_admin`/`role_in_use` 409 · `expired` 410 · `too_large` 413 · `unsupported_media` 415 · `validation_error` 422 · `account_locked` 423 (`details.retry_after_s`) · `rate_limited` 429 · `server_error` 500.
+  Codes: `unauthenticated` 401 · `invalid_credentials` 401 · `forbidden` 403 · `account_disabled` 403 · `self_protection` 403 · `role_locked` 403 · `not_found` 404 · `conflict`/`in_use`/`last_admin`/`role_in_use` 409 · `expired` 410 · `too_large` 413 · `unsupported_media` 415 · `validation_error` 422 · `account_locked` 423 (`details.retry_after_s`) · `rate_limited` 429 · `server_error` 500 · `insufficient_storage` 507.
 - Personen-Verweis überall: `{"id": 1, "display_name": "Alex Admin"}` oder `null`.
 - **CSRF:** alle ändernden Methoden auf `/api/` (außer `/api/auth/login`, `/api/auth/dev-login`, `/api/player/*`, `/api/agent/*`) brauchen Header `X-CSRF-Token` = Token aus der Sitzung; sonst 403 `forbidden` („Sicherheitsprüfung fehlgeschlagen – Seite neu laden“).
 - Jede ändernde Aktion schreibt einen Protokolleintrag (§4 audit_log).
@@ -575,7 +575,8 @@ Content = {
 }
 usages = [{"type": "presentation"|"design"|"touch_menu"|"content", "id", "name", "published": bool}]
 ```
-- **Upload:** erlaubt JPEG, PNG, WebP, GIF, MP4, WebM, MOV, MKV, PDF – Prüfung über den **Inhalt** (Pillow `verify`, ffprobe, `%PDF-` + pdfinfo), nicht nur Endung. SVG und alles andere → Fehler „Dateityp nicht unterstützt (…). Erlaubt: …“. Größe ≤ `upload_max_mb`. Titel = Dateiname ohne Endung.
+- **Upload:** erlaubt JPEG, PNG, WebP, GIF, MP4, WebM, MOV, MKV, PDF – Prüfung über den **Inhalt** (Pillow `verify`, ffprobe, `%PDF-` + pdfinfo), nicht nur Endung. SVG und alles andere → Fehler „Dateityp nicht unterstützt (…). Erlaubt: …“. Größe ≤ `upload_max_mb`; Anfrage insgesamt höchstens 10 256 MB (Grenze des Webservers). Weniger freier Speicher als Anfrage + 1 GB → 507 `insufficient_storage`. Titel = Dateiname ohne Endung.
+- **Ausgehende Abrufe** (Webseiten-Prüfung, RSS-Feeds): keine Ziele auf dem Server selbst (Loopback), Link-Local (z. B. 169.254.169.254) oder unspezifiziert – auch nicht über Weiterleitungen; LAN-Adressen erlaubt. Gesamtzeit begrenzt (Prüfung 10 s, Feed 30 s).
 - **Dateien:** `data/media/<uid>/original.<ext>`; Bild: `display.jpg|png` (max. 2160 px lange Kante, EXIF-Drehung angewandt, PNG nur bei Transparenz, GIF bleibt Original), `thumb.webp` (max. 480 px). Video: `poster.jpg` (Einzelbild bei min(1 s, Dauer/3)), `thumb.webp`, `video.mp4` wenn umgewandelt/umgepackt. PDF: `pages/p001.png` … (1080 px breit, max. 100 Seiten), `thumb.webp`.
 - **Video-Job:** ffprobe → Dauer, Größe, Codec. Browser-tauglich = Container mp4/webm/mov mit H.264/VP8/VP9/AV1 und Audio AAC/Opus/Vorbis/MP3/keins. Sonst (bei `auto_transcode`) ffmpeg → H.264/AAC MP4 `-movflags +faststart -pix_fmt yuv420p -preset veryfast -crf 21`, Fortschritt über `-progress pipe:1` → `contents.progress`. Kompatible MP4 ohne faststart → umpacken (`-c copy -movflags +faststart`).
 - **Warnungen** (berechnet): `landscape` (Breite > Höhe), `low_resolution` (Breite < 720 oder Höhe < 1280 bei Hochformat bzw. Fläche < 40 % von 1080×1920), `transcoded`, `incompatible`, `not_embeddable`, `processing_failed`.
@@ -805,10 +806,13 @@ Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 
 ### 9.6 Kopplung
 - Ohne Schlüssel: `POST /api/player/pairing` → 6-stelliger Code, groß anzeigen („482 913“), dazu CMS-Adresse (`location.origin`) und Anleitung „Im CMS unter Stelen → Stele hinzufügen diesen Code eingeben“. Alle 3 s `GET /api/player/pairing/<code>`; `paired` → Schlüssel übernehmen (Antwort + Cookie) und starten; `expired` → neuen Code holen.
+- Gespeicherter Schlüssel abgelehnt: nur `401` zählt (403 u. Ä. → nur Fehlerprotokoll). Kopplungsbildschirm erst nach mind. 3 Ablehnungen **und** 10 min anhaltender Ablehnung (kurze Server-Störung ≠ entkoppelt). Schlüssel und gespeichertes Manifest bleiben dabei erhalten; Heartbeats laufen mit dem alten Schlüssel weiter – gilt er wieder, bricht der Player die Kopplung ab und zeigt den gespeicherten Stand. Erst eine neue Kopplung ersetzt Schlüssel und Manifest.
 
 ### 9.7 Telemetrie und Befehle
 - Heartbeat alle 15 s (`POST /api/player/heartbeat`), Antwort enthält `manifest_version` (weicht sie ab → Manifest neu laden) und `commands`.
-- Befehle: `reload` (neu laden), `identify` (10 s Vollbild-Overlay mit Stelen-Name/Standort, pulsierender Rahmen), `clear_cache` (SW-Caches + gespeichertes Manifest löschen, neu laden). Ergebnis im nächsten Heartbeat (`command_results`).
+- Befehle: `reload` (neu laden), `identify` (10 s Vollbild-Overlay mit Stelen-Name/Standort, pulsierender Rahmen), `clear_cache` (nur Medien-Cache löschen; Programmdateien, Schlüssel und gespeichertes Manifest bleiben; neu laden nur, wenn der Server erreichbar ist). Ergebnis im nächsten Heartbeat (`command_results`).
+- Zustellung (Player und Agent): offene Befehle verfallen nach 10 min ohne Bestätigung (`result` „Fehler: abgelaufen …“); zugestellt, aber nach 3 min ohne Ergebnis → erneut zustellen (Player und Agent führen jede ID nur einmal aus).
+- Statistik (`played`, `touch`) und offene Ergebnisse überstehen einen Neustart des Players (localStorage).
 - Diagnose: 5× schnell in die linke obere Ecke (150 × 150 px) tippen → Info-Overlay (Version, Stele, Schlüssel-Ende, Manifest-Version/-Alter, online/offline, Bildschirm, aktuelle Folie, letzte Fehler), schließt nach 30 s.
 - `PLAYER_VERSION = "1.0.0"`.
 
@@ -816,7 +820,7 @@ Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 | Methode | Pfad | Body → Antwort |
 |---|---|---|
 | POST | `/api/player/pairing` (ohne Schlüssel, max. 10/min je IP) | `{device_info: {user_agent, screen: {w, h}}}` → `{code, expires_at, poll_interval_s: 3}` |
-| GET | `/api/player/pairing/<code>` | → `{status: "waiting|paired|expired", key?: str, stele?: {id, name}}` (bei `paired` zusätzlich Cookie setzen) |
+| GET | `/api/player/pairing/<code>` (max. 60/min je IP) | → `{status: "waiting|paired|expired", key?: str, stele?: {id, name}}` (bei `paired` zusätzlich Cookie setzen; nach der ersten Auslieferung nur noch 30 s abrufbar) |
 | GET | `/api/player/manifest` | → Manifest (ETag) |
 | POST | `/api/player/heartbeat` | `Heartbeat` → `{manifest_version, commands: [{id, command, payload}], server_time}` |
 | GET | `/player/?key=…` | setzt Cookie `stele_key` (HttpOnly, SameSite=Lax, 10 Jahre) und liefert die Seite |
@@ -832,7 +836,7 @@ Heartbeat = {
   "command_results": [{"id", "ok", "message"}]
 }
 ```
-Server: `last_seen_at`, `last_state` aktualisieren; Online-Segment verlängern (Lücke > `offline_after_s` → neues Segment + Ereignis `online`); Listen in `playback_log`/`touch_log`/`stele_events` schreiben; Befehle als `delivered_at` markieren; unbekannter Schlüssel → 401.
+Server: `last_seen_at`, `last_state` aktualisieren; Online-Segment verlängern (Lücke > `offline_after_s` → neues Segment + Ereignis `online`); Listen in `playback_log`/`touch_log`/`stele_events` schreiben; Befehle als `delivered_at` markieren (s. §9.7 Zustellung); Zeitstempel der Player-Uhr, die mehr als 1 Tag von der Serverzeit abweichen, durch die Serverzeit ersetzen; unbekannter Schlüssel → 401.
 
 ## 10. Stelen-Agent (`stele_agent/`)
 - `stele_agent.py`, nur Standardbibliothek; `psutil` und `mss`/`Pillow` optional (Fallbacks: `/proc` unter Linux).

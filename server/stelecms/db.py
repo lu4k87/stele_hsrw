@@ -47,7 +47,8 @@ def transaction(conn: sqlite3.Connection):
     try:
         yield conn
     except BaseException:
-        conn.execute("ROLLBACK")
+        if conn.in_transaction:  # SQLite rollt bei SQLITE_FULL/IOERR selbst zurück
+            conn.execute("ROLLBACK")
         raise
     else:
         conn.execute("COMMIT")

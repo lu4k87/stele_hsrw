@@ -364,6 +364,9 @@ def collect_assets(obj) -> list[str]:
 
 def finalize_manifest(m: dict) -> dict:
     body = {k: v for k, v in m.items() if k not in ("version", "generated_at")}
+    # Abrufzeit der Feeds nicht mitzählen: sonst alle 10 min eine neue Version ohne neue Meldungen
+    if isinstance(body.get("feeds"), dict):
+        body["feeds"] = {url: (f or {}).get("items") for url, f in body["feeds"].items()}
     m["version"] = sha256_hex(body)[:16]
     return m
 

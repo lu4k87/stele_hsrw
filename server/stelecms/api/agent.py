@@ -15,6 +15,7 @@ from .player import apply_command_results, require_stele
 bp = Blueprint("api_agent", __name__, url_prefix="/api/agent")
 
 SCREENSHOT_MAX_W = 1080
+SCREENSHOT_MAX_PIXELS = 40_000_000
 
 
 def _pct(value):
@@ -52,11 +53,7 @@ def report():
                      (s["id"], now, agent["cpu"], agent["ram"], agent["disk"], agent["temp"]))
         # Ergänzung: Ergebnisse von Agent-Befehlen (z. B. „Screenshots auf der Stele deaktiviert“)
         apply_command_results(conn, s["id"], data.get("command_results"), now)
-        rows = dbm.rows(conn, "SELECT id, command FROM stele_commands WHERE stele_id = ? AND delivered_at IS NULL "
-                              "AND command IN (%s) ORDER BY id" % ",".join("?" for _ in steles.AGENT_COMMANDS),
-                        (s["id"], *steles.AGENT_COMMANDS))
-        for r in rows:
-            conn.execute("UPDATE stele_commands SET delivered_at = ? WHERE id = ?", (now, r["id"]))
+        rows = steles.deliver_commands(conn, s["id"], steles.AGENT_COMMANDS, now)
     return jsonify({"ok": True, "commands": [{"id": r["id"], "command": r["command"]} for r in rows]})
 
 
@@ -70,6 +67,8 @@ def screenshot():
     raw = f.read()
     try:
         with Image.open(io.BytesIO(raw)) as im:
+            if im.width * im.height > SCREENSHOT_MAX_PIXELS:  # vor dem Dekodieren: kleine Datei, riesiges Bild
+                raise ApiError(413, "too_large", "Der Screenshot ist zu groß (höchstens 40 Megapixel).")
             im.load()
             img = im.convert("RGB")
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):

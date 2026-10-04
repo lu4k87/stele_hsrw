@@ -61,8 +61,11 @@ def backup():
     dest = sqlite3.connect(str(target))
     try:
         conn.backup(dest)
-    finally:
+    except BaseException:
         dest.close()
+        target.unlink(missing_ok=True)  # keine halbe Sicherung liegen lassen
+        raise
+    dest.close()
     with dbm.transaction(conn):
         audit(conn, "backup", "settings", "hat eine Sicherung der Datenbank heruntergeladen",
               entity_name="Datenbank", details={"file_name": name, "size_bytes": target.stat().st_size})

@@ -5,9 +5,11 @@ Ohne Hintergrund-Threads (STELECMS_BACKGROUND=0, Tests) laufen Jobs direkt im au
 from __future__ import annotations
 
 import logging
+import sqlite3
 import subprocess
 import threading
 import time
+from datetime import timedelta
 from pathlib import Path
 
 from PIL import Image
@@ -38,11 +40,33 @@ def kick(app) -> None:
         process_pending(app.config)
 
 
+ORPHAN_AFTER_S = 120
+
+
+def requeue_orphans(conn) -> int:
+    """Video/PDF in Verarbeitung ohne offenen Job (z. B. Upload brach zwischen Anlegen und Einreihen ab).
+
+    Erst nach ORPHAN_AFTER_S, damit ein gerade laufender Upload seinen Job noch selbst einreihen kann.
+    """
+    cutoff = timeutil.iso(timeutil.utcnow() - timedelta(seconds=ORPHAN_AFTER_S))
+    with dbm.transaction(conn):
+        rows = conn.execute(
+            "SELECT id, type FROM contents c WHERE status = 'processing' AND type IN ('video', 'pdf') "
+            "AND created_at < ? AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.content_id = c.id "
+            "AND j.status IN ('queued', 'running'))", (cutoff,)).fetchall()
+        for r in rows:
+            enqueue(conn, r["type"], r["id"])
+    if rows:
+        log.warning("%d Inhalt(e) ohne Verarbeitungs-Job neu eingereiht", len(rows))
+    return len(rows)
+
+
 def process_pending(cfg) -> int:
     """Arbeitet alle wartenden Jobs ab. Rückgabe: Anzahl bearbeiteter Jobs."""
     conn = dbm.connect(cfg["DB_PATH"])
     count = 0
     try:
+        requeue_orphans(conn)
         while True:
             with dbm.transaction(conn):
                 job = dbm.row(conn, "SELECT * FROM jobs WHERE status = 'queued' ORDER BY id LIMIT 1")
@@ -71,9 +95,12 @@ class _Progress:
             return
         self._last, self._value = now, pct
         ts = timeutil.now_iso()
-        self.conn.execute("UPDATE jobs SET progress = ?, updated_at = ? WHERE id = ?", (pct, ts, self.job_id))
-        self.conn.execute("UPDATE contents SET progress = ? WHERE id = ? AND status = 'processing'",
-                          (pct, self.content_id))
+        try:
+            self.conn.execute("UPDATE jobs SET progress = ?, updated_at = ? WHERE id = ?", (pct, ts, self.job_id))
+            self.conn.execute("UPDATE contents SET progress = ? WHERE id = ? AND status = 'processing'",
+                              (pct, self.content_id))
+        except sqlite3.OperationalError as exc:  # kurz gesperrte Datenbank: Anzeige ist zweitrangig
+            log.warning("Fortschritt von Job %s nicht gespeichert: %s", self.job_id, exc)
 
 
 def run_job(conn, cfg, job: dict) -> None:

@@ -14,6 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stelecms import create_app  # noqa: E402
 from stelecms.seed import log_player_links  # noqa: E402
 
+# waitress puffert den Body vor jeder Anmeldeprüfung → feste Obergrenze = größte einstellbare Dateigröße + Reserve
+MAX_BODY_BYTES = (10240 + 16) * 1024 * 1024
+
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(name)s: %(message)s")
@@ -31,7 +34,7 @@ def main() -> None:
         app.run(host=host, port=port, threaded=True, use_reloader=False, debug=False)
         return
     serve(app, host=host, port=port, threads=16, ident="SteleCMS", channel_timeout=300,
-          max_request_body_size=1024 ** 4)
+          max_request_body_size=MAX_BODY_BYTES)
 
 
 if __name__ == "__main__":

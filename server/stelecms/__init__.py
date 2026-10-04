@@ -46,6 +46,7 @@ def create_app(overrides: dict | None = None) -> Flask:
     app.extensions["stelecms_limiters"] = {
         "login": security.RateLimiter(20, 300),      # §7.2: max. 20 Versuche / 5 min je IP
         "pairing": security.RateLimiter(10, 60),     # §9.8: max. 10 Kopplungscodes / min je IP
+        "pairing_poll": security.RateLimiter(60, 60),  # Statusabfrage: Player fragt alle 3 s (20 / min)
     }
 
     # ------------------------------------------------------------ Datenbank

@@ -6,6 +6,7 @@ Jede Aufgabe ist einzeln aufrufbar (Tests) und fängt ihre Fehler selbst ab.
 from __future__ import annotations
 
 import html
+import http.client
 import logging
 import re
 import shutil
@@ -15,10 +16,11 @@ import time
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
 
-from . import appsettings, steles, timeutil
+from . import appsettings, security, steles, timeutil
 from . import db as dbm
 from .validation import is_http_url
 
@@ -74,8 +76,10 @@ def ping(host: str) -> tuple[bool, float | None]:
 
 def ping_all(conn) -> int:
     rows = dbm.rows(conn, "SELECT id, ip_address, last_ping_ok FROM steles WHERE ip_address != ''")
-    for s in rows:
-        ok, ms = ping(s["ip_address"])
+    # parallel: viele unerreichbare Stelen sollen die Offline-Erkennung im selben Thread nicht aufhalten
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda s: ping(s["ip_address"]), rows))
+    for s, (ok, ms) in zip(rows, results):
         now = timeutil.now_iso()
         with dbm.transaction(conn):
             conn.execute("UPDATE steles SET last_ping_at = ?, last_ping_ok = ?, last_ping_ms = ? WHERE id = ?",
@@ -132,8 +136,8 @@ def parse_feed(raw: bytes) -> list[str]:
 def fetch_feed(url: str) -> list[str]:
     req = urllib.request.Request(url, headers={"User-Agent": "SteleCMS-Feed/1.0",
                                                "Accept": "application/rss+xml, application/atom+xml, */*;q=0.5"})
-    with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 (nur http/https geprüft)
-        raw = resp.read(FEED_MAX_BYTES + 1)
+    with security.open_outbound(req, timeout=10) as resp:
+        raw = security.read_limited(resp, FEED_MAX_BYTES, 30)
     if len(raw) > FEED_MAX_BYTES:
         raise ValueError("Feed ist größer als 2 MB.")
     return parse_feed(raw)
@@ -146,7 +150,7 @@ def refresh_feeds(conn, fetch=fetch_feed) -> int:
         try:
             items = fetch(url)
             ok, err = 1, ""
-        except (urllib.error.URLError, OSError, ValueError, ET.ParseError) as exc:
+        except (urllib.error.URLError, OSError, ValueError, ET.ParseError, http.client.HTTPException) as exc:
             items, ok, err = None, 0, str(exc)[:300]
         with dbm.transaction(conn):
             if ok:
@@ -177,6 +181,20 @@ def cleanup(conn, cfg) -> dict:
                                       (cutoff,)).rowcount
         counts["pairing_requests"] = conn.execute(
             "DELETE FROM pairing_requests WHERE expires_at < ?", (timeutil.iso(now),)).rowcount
+    # Medien-Ordner ohne Inhalt (Absturz zwischen Verschieben und Anlegen, gescheitertes Löschen)
+    media_dir = Path(cfg["MEDIA_DIR"])
+    if media_dir.is_dir():
+        uids = {r["uid"] for r in conn.execute("SELECT uid FROM contents")}
+        limit = time.time() - 24 * 3600
+        removed = 0
+        for d in media_dir.iterdir():
+            try:
+                if d.is_dir() and not d.name.startswith(".") and d.name not in uids and d.stat().st_mtime < limit:
+                    shutil.rmtree(d)
+                    removed += 1
+            except OSError:
+                pass
+        counts["media_orphans"] = removed
     # Liegengebliebene Upload-Reste
     tmp = Path(cfg["MEDIA_DIR"]) / ".tmp"
     if tmp.is_dir():

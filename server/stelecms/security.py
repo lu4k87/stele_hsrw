@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import secrets
+import socket
 import string
 import threading
 import time
+import urllib.parse
+import urllib.request
 from collections import deque
 
 from flask import current_app, request, session
@@ -153,6 +157,9 @@ class RateLimiter:
             if len(dq) >= self.max_hits:
                 return max(1.0, self.window_s - (now - dq[0]))
             dq.append(now)
+            if len(self._hits) > 1000:  # alte Schlüssel (IPs) nicht endlos sammeln
+                for k in [k for k, d in self._hits.items() if not d or now - d[-1] > self.window_s]:
+                    del self._hits[k]
             return 0.0
 
     def reset(self) -> None:
@@ -171,3 +178,60 @@ def is_loopback(ip: str | None = None) -> bool:
     if ip.startswith("::ffff:"):
         ip = ip[7:]
     return ip == "::1" or ip.startswith("127.")
+
+
+# ------------------------------------------------------------------ Ausgehende HTTP-Abrufe (Webseiten-Prüfung, Feeds)
+
+def _blocked_ip(addr: str) -> bool:
+    ip = ipaddress.ip_address(addr.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    # Server selbst und Cloud-Metadaten; LAN bleibt erlaubt (Intranet-Seiten sind übliche Inhalte)
+    return ip.is_loopback or ip.is_link_local or ip.is_unspecified or ip.is_multicast or ip.is_reserved
+
+
+def check_outbound_host(url: str) -> None:
+    """Wirft ValueError, wenn die Adresse auf den Server selbst oder Link-Local zeigt.
+
+    ponytail: prüft beim Verbindungsaufbau erneut nur über die Weiterleitungen, nicht gegen DNS-Rebinding
+    zwischen Prüfung und Abruf; Ausbau wenn die Prüfung auch fremden Konten offensteht.
+    """
+    host = urllib.parse.urlsplit(url).hostname
+    if not host:
+        raise ValueError("Adresse ohne Host.")
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except (socket.gaierror, UnicodeError) as exc:
+        raise ValueError(f"Host nicht auflösbar: {host}") from exc
+    if any(_blocked_ip(info[4][0]) for info in infos):
+        raise ValueError("Adressen des Servers selbst werden nicht abgerufen.")
+
+
+class _CheckedRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        check_outbound_host(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = urllib.request.build_opener(_CheckedRedirects)
+
+
+def open_outbound(req: urllib.request.Request, timeout: float):
+    """urlopen mit Host-Prüfung (auch nach Weiterleitungen)."""
+    check_outbound_host(req.full_url)
+    return _opener.open(req, timeout=timeout)  # noqa: S310 (Aufrufer prüfen http/https)
+
+
+def read_limited(resp, max_bytes: int, deadline_s: float) -> bytes:
+    """Liest höchstens max_bytes (+1) und bricht nach deadline_s Gesamtzeit ab (tröpfelnde Server)."""
+    end = time.monotonic() + deadline_s
+    chunks, size = [], 0
+    while size <= max_bytes:
+        if time.monotonic() > end:
+            raise TimeoutError("Abruf dauert zu lange.")
+        chunk = resp.read(min(65536, max_bytes + 1 - size))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        size += len(chunk)
+    return b"".join(chunks)
