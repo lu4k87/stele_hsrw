@@ -22,20 +22,21 @@
 /* Skizze (Hochformat 9:16) */
 .de-sketch {
   display: flex; flex-direction: column; width: 100%; aspect-ratio: 9 / 16; overflow: hidden;
-  border-radius: var(--r); border: 3px solid #1b2433; background: #F4F1EA;
+  border-radius: var(--r); border: 3px solid var(--device-bezel); background: var(--sketch-paper);
 }
 .de-sketch__header { display: flex; align-items: center; gap: 4px; padding: 0 6px; flex: none; min-height: 8px; overflow: hidden; }
 .de-sketch__header.is-center { justify-content: center; }
 .de-sketch__header img { height: 60%; max-width: 30%; object-fit: contain; }
-.de-sketch__title { font-size: 9px; font-weight: var(--fw-bold); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1 1 auto; }
+/* Miniatur: Titel, Uhr, Footer als Balken in Textfarbe statt Schrift < 14 px */
+.de-sketch__title { flex: 0 1 50%; height: 4px; border-radius: 2px; background: currentColor; opacity: .85; }
 .de-sketch__header.is-center .de-sketch__title { flex: 0 1 auto; }
-.de-sketch__clock { font-size: 8px; opacity: .9; }
+.de-sketch__clock { flex: none; width: 14%; height: 4px; margin-left: auto; border-radius: 2px; background: currentColor; opacity: .7; }
 .de-sketch__body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 8px; }
 .de-sketch__rule { width: 30%; height: 3px; background: var(--accent); border-radius: 2px; }
-.de-sketch__line { height: 4px; width: 80%; background: #111827; opacity: .35; border-radius: 2px; }
+.de-sketch__line { height: 4px; width: 80%; background: var(--sketch-ink); opacity: .35; border-radius: 2px; }
 .de-sketch__line.short { width: 55%; }
 .de-sketch__footer { flex: none; display: flex; align-items: center; padding: 0 6px; overflow: hidden; min-height: 6px; }
-.de-sketch__footer span { font-size: 8px; white-space: nowrap; overflow: hidden; }
+.de-sketch__footer span { flex: 0 1 70%; height: 3px; border-radius: 2px; background: currentColor; opacity: .8; }
 
 /* ---------- Editor ---------- */
 .de-layout { display: grid; gap: var(--sp-6); align-items: start; grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); }

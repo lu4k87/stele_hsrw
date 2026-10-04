@@ -5,7 +5,7 @@ Vanilla-JS-SPA ohne Build. Einstieg `index.html` → `js/main.js`. Fachlicher Ve
 ## Verzeichnisse
 | Pfad | Inhalt |
 |---|---|
-| `css/tokens.css` | Design-Tokens hell/dunkel – **nur diese Variablen** für Farben, Abstände, Radien, Schriftgrößen; Struktur-Tönung: `--tint`/`--tint-border` (Karten- und Tabellenköpfe), `--mark` (Kartenkopf-Icons, Akzentbalken vor Abschnittstiteln, KPI-Oberkante); Section-Töne `--sec-1` … `--sec-5` (+ `-border`, `-mark`): Karten rotieren je Gruppe durch 5 Töne (Kopf, Icon, Balken, KPI-Kante), `.tone-1` … `.tone-5` legt einen Ton fest |
+| `css/tokens.css` | Design-Tokens hell/dunkel – **nur diese Variablen** für Farben, Abstände, Radien, Schriftgrößen; Struktur-Tönung: `--tint`/`--tint-border` (Karten- und Tabellenköpfe), `--mark` (Kartenkopf-Icons, Akzentbalken vor Abschnittstiteln, KPI-Oberkante); Kartenköpfe neutral (`--tint`); Ton nur bei Abweichung (`.card--warning`, z. B. Liste mit offenen Punkten) oder bewusst per `.tone-1` … `.tone-5` (`--sec-1` … `--sec-5` + `-border`, `-mark`); feste Flächen: `--on-dark`, `--device-*`, `--sketch-*`, `--media-matte`, `--paper`, `--danger-solid` |
 | `css/base.css` | Reset, Typografie, Fokus, Layout-Helfer (`.stack`, `.cluster`, `.grid-auto`, `.split`, `.truncate` …) |
 | `css/components.css` | Knöpfe, Formulare, Karten, Chips, Tabellen, Tabs, Dialoge, Menüs, Toasts, Leer-/Ladezustände, Player-Rahmen |
 | `css/shell.css`, `css/login.css` | App-Rahmen, Anmeldung |
@@ -39,7 +39,7 @@ export default async function mount(root, ctx) {
 ## Bausteine (Auszug der Signaturen)
 **dom.js** – `h(tag, props, ...children)` (props: `class`, `style`, `dataset`, `onClick` …; nie innerHTML mit Benutzertext), `mount(el, ...children)`, `clear`, `useStyles(href)`, `debounce(fn, ms)` (`.flush()`), `uid(prefix)`, `copyText(text)`, `initials(name)`, `nextFrame()`.
 
-**format.js** – `formatDateTime`, `formatDate`, `formatTime`, `formatWeekday`, `formatRelative`, `formatDuration(s)`, `formatBytes`, `formatNumber`, `formatPercent`, `plural(n, 'Folie', 'Folien')`, `formatDays([1..7])`, `WEEKDAYS_SHORT/LONG`.
+**format.js** – `formatDateTime`, `formatDate`, `formatTime`, `formatWeekday`, `formatRelative`, `formatSince` („seit 5 Min.“, frisch „gerade eben“), `formatDuration(s)`, `formatBytes`, `formatNumber`, `formatPercent`, `plural(n, 'Folie', 'Folien')`, `formatDays([1..7])`, `WEEKDAYS_SHORT/LONG`.
 
 **api.js** – `api.get/post/put/patch/del(path, body?, { query, signal, background })`, `api.upload(path, formData, { onProgress, signal })`, `api.download(path, query)`, `ApiError {status, code, message, fields, details}`, `errorMessage(err)`.
 
@@ -61,7 +61,7 @@ export default async function mount(root, ctx) {
 
 **ui/tabs.js** – `tabs({ items:[{id,label,icon,badge}], value, onChange, ariaLabel })` → `{ el, panel, set, value }`.
 
-**ui/status.js** – `chip(kind, label, icon)`, `presentationStatus(p)`, `steleStatus(s)`, `validityChip(v)`, `warningList(warnings)`, `CONTENT_TYPES`, `contentTypeLabel/Icon(type)`, `PRESENTATION_STATUS`, `STELE_STATUS`.
+**ui/status.js** – `chip(kind, label, icon)`, `presentationStatus(p)`, `steleStatus(s)`, `validityChip(v)`, `warningList(warnings)`, `CONTENT_TYPES`, `contentTypeLabel/Icon(type)`, `PRESENTATION_STATUS`, `STELE_STATUS` (eine Tabelle für Chip, Karte, Tooltip, Stelen-Pille, Navi-Badge: `kind`, `label`, `icon`, `pill`, `alert`, `hint`), `steleState(s)`.
 
 **ui/empty.js** – `emptyState({ icon, title, text, actions })`, `loadingBlock(text)`, `errorState({ title, error, onRetry })`, `skeletonLines(n)`, `skeletonGrid(n, min)`.
 

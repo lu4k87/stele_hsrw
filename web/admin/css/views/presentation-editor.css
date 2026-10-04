@@ -83,7 +83,7 @@
 .pe-props__head .cu-portrait { width: 48px; }
 .pe-props__headtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pe-props__title { overflow-wrap: anywhere; }
-.pe-props .form-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.pe-props .form-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); } /* „Standard (Überblenden)“ ungekürzt → im Eigenschaften-Feld untereinander */
 .pe-note { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-3); border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); font-size: var(--fs-sm); }
 .pe-note .icon { flex: none; margin-top: 1px; }
 .pe-link { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fw-medium); width: fit-content; min-height: 32px; }

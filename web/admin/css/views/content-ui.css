@@ -9,7 +9,7 @@
   background: var(--surface-3); color: var(--text-2);
 }
 .cu-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.cu-thumb--contain img { object-fit: contain; background: #000; }
+.cu-thumb--contain img { object-fit: contain; background: var(--media-matte); }
 .cu-thumb > .icon { width: 32px; height: 32px; }
 .cu-thumb__state {
   display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);

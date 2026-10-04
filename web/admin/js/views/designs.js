@@ -145,12 +145,12 @@ export function designSketch(cfg = {}, logoUrl = null) {
   const theme = cfg.theme || {};
   const hPct = hd.enabled ? (hd.height || 180) / 19.2 : 0;
   const fPct = ft.enabled ? (ft.height || 96) / 19.2 : 0;
-  return h('span', { class: ['de-sketch', `de-font-${theme.font || 'sans'}`], style: { '--accent': theme.accent_color || '#F5B400' } },
+  return h('span', { class: ['de-sketch', `de-font-${theme.font || 'sans'}`], style: { '--accent': theme.accent_color || '#F5B400' }, 'aria-hidden': 'true' },
     hd.enabled ? h('span', { class: ['de-sketch__header', hd.logo_position === 'center' && 'is-center'], style: { height: `${hPct}%`, background: hd.bg_color, color: hd.text_color } },
       logoUrl ? h('img', { src: logoUrl, alt: '' }) : null,
-      h('span', { class: 'de-sketch__title' }, hd.title || ''),
-      hd.show_clock ? h('span', { class: 'de-sketch__clock' }, '10:30') : null) : null,
+      hd.title ? h('span', { class: 'de-sketch__title' }) : null,
+      hd.show_clock ? h('span', { class: 'de-sketch__clock' }) : null) : null,
     h('span', { class: 'de-sketch__body' }, h('span', { class: 'de-sketch__rule' }), h('span', { class: 'de-sketch__line' }), h('span', { class: 'de-sketch__line short' })),
     ft.enabled ? h('span', { class: 'de-sketch__footer', style: { height: `${fPct}%`, background: ft.bg_color, color: ft.text_color } },
-      h('span', {}, ft.mode === 'ticker' ? (ft.ticker_items || []).join(` ${ft.ticker_separator || '•'} `) || 'Laufband' : ft.text || '')) : null);
+      ft.mode === 'ticker' || ft.text ? h('span') : null) : null);
 }

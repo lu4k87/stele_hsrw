@@ -56,6 +56,7 @@ export default async function mount(root, ctx) {
 
   // ---------- Stelen-Überblick ----------
   function bandFor(s) {
+    if (s.status === 'never') return h('p', { class: 'text-2 text-sm' }, 'Gemessen wird ab der ersten Meldung der Stele.');
     const b = state.bands.get(s.id);
     const to = new Date();
     const from = new Date(to.getTime() - 24 * 3600 * 1000);
@@ -70,8 +71,6 @@ export default async function mount(root, ctx) {
     }
     const rows = steles.map((s) => {
       const selected = s.id === state.steleId;
-      const pct = s.availability_24h_pct;
-      const pctKind = pct == null ? 'neutral' : pct >= 99 ? 'success' : pct >= 90 ? 'warning' : 'danger';
       const btn = h('button', { type: 'button', class: 'mon-stele__btn', 'aria-pressed': String(selected), dataset: { id: s.id }, title: 'Details anzeigen' }, s.name);
       btn.addEventListener('click', () => selectStele(s.id));
       const b = h('article', { class: ['mon-stele', selected && 'is-selected'] },
@@ -80,7 +79,7 @@ export default async function mount(root, ctx) {
         h('div', { class: 'mon-stele__now' }, nowPlaying(s, { compact: true })),
         h('div', { class: 'mon-stele__avail' },
           h('div', { class: 'mon-stele__avail-row' }, h('span', { class: 'text-2 text-sm' }, 'Verfügbarkeit 24 h'),
-            h('span', { class: ['mon-pct', `mon-pct--${pctKind}`, 'num'] }, pct == null ? '–' : formatPercent(pct, 1))),
+            availChip(s.status === 'never' ? null : s.availability_24h_pct)),
           bandFor(s)),
         h('dl', { class: 'mon-stele__stats' },
           stat('Wiedergaben heute', formatNumber(s.plays_today ?? 0), 'play'),
@@ -95,6 +94,12 @@ export default async function mount(root, ctx) {
         steles.length > 1 ? h('span', { class: 'text-2 text-sm' }, 'Stele anklicken für Details') : null),
       h('div', { class: 'mon-steles' }, rows)));
     if (focusedId) stelesSlot.querySelector(`.mon-stele__btn[data-id="${focusedId}"]`)?.focus();
+  }
+  // Verfügbarkeitsstufe als Chip (Icon + Text); nie gemeldet → „–“ statt „0 %“
+  function availChip(pct) {
+    if (pct == null) return h('span', { class: 'mon-pct num', title: 'Noch keine Messung' }, '–', h('span', { class: 'visually-hidden' }, ' (noch keine Messung)'));
+    const [kind, iconName] = pct >= 99 ? ['success', 'check-circle'] : pct >= 90 ? ['warning', 'alert-triangle'] : ['danger', 'alert-circle'];
+    return chip(kind, formatPercent(pct, 1), iconName, { size: 'sm', title: 'Ziel: mindestens 99 % online' });
   }
   function stat(label, value, iconName, warn = false) {
     return h('div', { class: ['mon-stat', warn && 'is-warn'] }, h('dt', {}, icon(iconName, { size: 16 }), label), h('dd', { class: 'num' }, warn ? h('span', {}, value, h('span', { class: 'visually-hidden' }, ' (Achtung)')) : value));
@@ -192,7 +197,7 @@ export default async function mount(root, ctx) {
       h('div', { class: 'section-title mon-detail-title' },
         h('h2', { id: 'mon-detail-h' }, `Details: ${s.name}`),
         h('div', { class: 'cluster' }, picker, rangeSeg, h('a', { class: 'btn btn--ghost btn--sm', href: `#/steles/${s.id}` }, 'Zur Stele', icon('chevron-right', { size: 16 })))),
-      card({ title: `Verfügbarkeit · ${av.pct == null ? '–' : formatPercent(av.pct, 1)} online`, icon: 'wifi',
+      card({ title: `Verfügbarkeit · ${av.pct == null || s.status === 'never' ? '–' : `${formatPercent(av.pct, 1)} online`}`, icon: 'wifi',
         body: availabilityBand({ from, to, segments: av.segments || [], pct: av.pct, since: s.created_at, label: `Verfügbarkeit ${s.name}` }) }),
       h('div', { class: 'mon-grid' },
         card({ title: 'Stelen-PC', icon: 'cpu', subtitle: s.agent ? `Letzte Meldung ${formatRelative(s.agent.last_at)}` : null, body: metricsBody }),

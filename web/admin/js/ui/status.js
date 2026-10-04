@@ -38,17 +38,23 @@ export function presentationStatus(p, { size = null } = {}) {
   return h('span', { class: 'cluster', style: { '--cluster-gap': '6px' } }, chips);
 }
 
+/** Stelen-Zustand – eine Tabelle für Chip, Karte, Tooltip, Stelen-Pille und Navi-Badge.
+ *  pill: Klasse der Stelen-Pille (shell.css), alert: zählt im Navi-Badge als Störung (nur offline). */
 export const STELE_STATUS = {
-  online: { kind: 'success', label: 'Online', icon: 'wifi' },
-  offline: { kind: 'danger', label: 'Offline', icon: 'wifi-off' },
-  standby: { kind: 'neutral', label: 'Nachtmodus', icon: 'moon' },
-  never: { kind: 'neutral', label: 'Noch nie verbunden', icon: 'power' },
+  online: { kind: 'success', label: 'Online', icon: 'wifi', pill: 'online', hint: 'Meldet sich regelmäßig.' },
+  offline: { kind: 'danger', label: 'Offline', icon: 'wifi-off', pill: 'offline', alert: true, hint: 'Keine Meldung mehr – Stromversorgung und Netz der Stele prüfen.' },
+  standby: { kind: 'neutral', label: 'Nachtmodus', icon: 'moon', pill: 'standby', hint: 'Bildschirm laut Zeitplan aus.' },
+  never: { kind: 'neutral', label: 'Nicht gekoppelt', icon: 'link', pill: 'standby', hint: 'Hat sich noch nie gemeldet – Stele koppeln oder Player-Link auf der Stele öffnen.' },
 };
 
+/** Eintrag aus STELE_STATUS für eine Stele (unbekannt → wie „never“). */
+export function steleState(stele) {
+  return STELE_STATUS[stele?.status] || STELE_STATUS.never;
+}
+
 export function steleStatus(stele, { size = null } = {}) {
-  if (stele && stele.paired === false && stele.status === 'never') return chip('warning', 'Nicht gekoppelt', 'link', { size });
-  const s = STELE_STATUS[stele?.status] || STELE_STATUS.never;
-  return chip(s.kind, s.label, s.icon, { size });
+  const s = steleState(stele);
+  return chip(s.kind, s.label, s.icon, { size, title: s.hint });
 }
 
 export const VALIDITY = {

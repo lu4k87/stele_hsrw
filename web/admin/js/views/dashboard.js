@@ -82,7 +82,8 @@ export default async function mount(root, ctx) {
     }) }));
   }
 
-  function listCard({ title, iconName, items, empty, render, more = null, count = true }) {
+  // warn: Treffer = offene Punkte → Kartenkopf gelb (Ton nur bei Abweichung, sonst neutral)
+  function listCard({ title, iconName, items, empty, render, more = null, count = true, warn = false }) {
     const n = items.length;
     return card({
       title: count && n ? `${title} (${formatNumber(n)})` : title,
@@ -90,13 +91,13 @@ export default async function mount(root, ctx) {
       flush: true,
       body: n ? h('ul', { class: 'list' }, items.map(render)) : h('div', { class: 'dash__empty' }, icon('check-circle', { size: 18 }), h('span', {}, empty)),
       footer: more,
-      className: 'dash__list-card',
+      className: warn && n ? 'dash__list-card card--warning' : 'dash__list-card',
     });
   }
 
   function reviewsCard(reviews) {
     return listCard({
-      title: 'Warten auf Freigabe', iconName: 'send', items: reviews,
+      title: 'Warten auf Freigabe', iconName: 'send', items: reviews, warn: true,
       empty: 'Keine offenen Freigaben – alles erledigt.',
       render: (r) => h('li', {},
         h('div', { class: 'list__main' },
@@ -109,7 +110,7 @@ export default async function mount(root, ctx) {
 
   function unpublishedCard(items) {
     return listCard({
-      title: 'Unveröffentlichte Änderungen', iconName: 'alert-triangle', items,
+      title: 'Unveröffentlichte Änderungen', iconName: 'alert-triangle', items, warn: true,
       empty: 'Alle Präsentationen sind auf dem neuesten Stand.',
       render: (p) => h('li', {},
         h('div', { class: 'list__main' },
@@ -122,7 +123,7 @@ export default async function mount(root, ctx) {
 
   function expiringCard(items) {
     return listCard({
-      title: 'Läuft bald ab', iconName: 'clock', items,
+      title: 'Läuft bald ab', iconName: 'clock', items, warn: true,
       empty: 'In den nächsten 7 Tagen läuft keine Folie ab.',
       render: (x) => h('li', {},
         h('div', { class: 'list__main' },
@@ -133,7 +134,7 @@ export default async function mount(root, ctx) {
 
   function staleCard(items, days) {
     return listCard({
-      title: 'Länger nicht aktualisiert', iconName: 'calendar-clock', items,
+      title: 'Länger nicht aktualisiert', iconName: 'calendar-clock', items, warn: true,
       empty: `Alle Präsentationen auf den Stelen wurden in den letzten ${plural(days, 'Tag', 'Tagen')} veröffentlicht.`,
       render: (p) => h('li', {},
         h('div', { class: 'list__main' },

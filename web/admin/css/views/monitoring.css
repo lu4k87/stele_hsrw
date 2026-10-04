@@ -27,11 +27,8 @@
 .mon-stele__btn:focus-visible::after { outline: 3px solid var(--focus); outline-offset: 2px; }
 .mon-stele__now { font-size: var(--fs-sm); }
 .mon-stele__avail { display: flex; flex-direction: column; gap: 6px; }
-.mon-stele__avail-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.mon-stele__avail-row { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .mon-pct { font-weight: var(--fw-bold); font-size: var(--fs-md); }
-.mon-pct--success { color: var(--success); }
-.mon-pct--warning { color: var(--warning); }
-.mon-pct--danger { color: var(--danger); }
 .mon-stele__stats { display: flex; flex-direction: column; gap: 2px; margin: 0; padding-top: var(--sp-2); border-top: 1px solid var(--border); }
 .mon-stat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); min-width: 0; }
 .mon-stat dt { display: flex; gap: 6px; align-items: center; font-size: var(--fs-sm); color: var(--text-2); }

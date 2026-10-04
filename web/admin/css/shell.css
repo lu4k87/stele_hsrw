@@ -22,12 +22,12 @@
   display: flex; align-items: center; gap: var(--sp-3);
   height: var(--topbar-h); padding: 0 var(--sp-4);
   border-bottom: 1px solid var(--nav-border);
-  color: #fff; text-decoration: none; flex: none; min-width: 0;
+  color: var(--on-dark); text-decoration: none; flex: none; min-width: 0;
 }
 .brand-mark {
   width: 36px; height: 36px; flex: none; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(29, 78, 216, .45);
+  background: var(--primary); color: var(--on-primary); box-shadow: 0 2px 8px rgba(29, 78, 216, .45);
 }
 .brand-mark .icon { width: 22px; height: 22px; }
 .sidebar__brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
@@ -52,9 +52,9 @@
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .nav-link .icon { width: 20px; height: 20px; color: var(--nav-text-2); flex: none; }
-.nav-link:hover { background: var(--nav-hover); color: #fff; }
-.nav-link:hover .icon { color: #fff; }
-.nav-link[aria-current="page"] { background: var(--nav-active); color: #fff; }
+.nav-link:hover { background: var(--nav-hover); color: var(--on-dark); }
+.nav-link:hover .icon { color: var(--on-dark); }
+.nav-link[aria-current="page"] { background: var(--nav-active); color: var(--on-dark); }
 .nav-link[aria-current="page"] .icon { color: var(--nav-accent); }
 .nav-link[aria-current="page"]::before {
   content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 4px;
@@ -70,7 +70,7 @@
   border: 0; border-radius: var(--r); background: transparent; color: var(--nav-text-2);
   font-weight: var(--fw-medium); white-space: nowrap;
 }
-.sidebar__collapse:hover { background: var(--nav-hover); color: #fff; }
+.sidebar__collapse:hover { background: var(--nav-hover); color: var(--on-dark); }
 .sidebar__collapse .icon { width: 20px; height: 20px; flex: none; }
 
 /* Eingeklappt: nur Icons, Beschriftung als Tooltip (title) und für Screenreader */
@@ -82,7 +82,7 @@
 }
 .app.is-collapsed .nav-group__label { height: 1px; padding: 0; margin: var(--sp-2) var(--sp-2); background: var(--nav-border); overflow: hidden; color: transparent; }
 .app.is-collapsed .nav-link, .app.is-collapsed .sidebar__collapse { justify-content: center; padding: 0; }
-.app.is-collapsed .nav-link .badge { position: absolute; top: 3px; right: 5px; min-width: 18px; height: 18px; font-size: 11.5px; padding: 0 4px; }
+.app.is-collapsed .nav-link .badge { position: absolute; top: 3px; right: 5px; min-width: 20px; height: 20px; font-size: var(--fs-sm); padding: 0 4px; }
 .app.is-collapsed .nav-link[aria-current="page"]::before { left: -12px; }
 
 /* ---------- Hauptbereich ---------- */

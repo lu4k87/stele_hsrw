@@ -37,7 +37,7 @@
   --tint: #f4f7fc;
   --tint-border: #dde5f0;
   --mark: var(--primary);
-  /* Section-Töne: Kopf-Hintergrund, Rand, Markierung je Abschnitt (Karten rotieren 1–5, .tone-N setzt fest) */
+  /* Section-Töne: Kopf-Hintergrund, Rand, Markierung je Abschnitt (nur per .tone-N bewusst gesetzt) */
   --sec-1: #dce7fc; --sec-1-border: #bfd1f6; --sec-1-mark: #2563eb;
   --sec-2: #d3eee8; --sec-2-border: #afdcd2; --sec-2-mark: #0f766e;
   --sec-3: #e5ddfb; --sec-3-border: #cdbff4; --sec-3-mark: #6d28d9;
@@ -59,6 +59,20 @@
   --neutral: #3b4556;
   --neutral-soft: #edf0f4;
   --neutral-border: #cdd4de;
+  --danger-solid: #b91c1c;
+  --danger-solid-hover: #991b1b;
+  --on-warning: #ffffff;
+  /* Text auf festen dunklen Flächen (Seitenleiste, Bild-Overlays, Kacheln) – in beiden Modi weiß */
+  --on-dark: #ffffff;
+  /* Geräte-Miniaturen (Stele-Rahmen, Design-Skizze) und Medienflächen – in beiden Modi gleich */
+  --device-bezel: #1b2433;
+  --device-screen: #0b1220;
+  --device-text: #cbd5e1;
+  --sketch-paper: #f4f1ea;
+  --sketch-ink: #111827;
+  --media-matte: #000000;
+  --paper: #ffffff;
+  --knob: #ffffff;
 
   /* Seitenleiste (in beiden Modi dunkel) */
   --nav-bg: #0f1d33;
@@ -171,6 +185,9 @@
   --neutral: #c7d1df;
   --neutral-soft: #1c273a;
   --neutral-border: #334259;
+  --danger-solid: #b42323;
+  --danger-solid-hover: #c53030;
+  --on-warning: #2a1c05;
   --nav-bg: #0a1322;
   --nav-bg-2: #0d1829;
   --nav-hover: #152440;
@@ -224,6 +241,9 @@
     --neutral: #c7d1df;
     --neutral-soft: #1c273a;
     --neutral-border: #334259;
+    --danger-solid: #b42323;
+    --danger-solid-hover: #c53030;
+    --on-warning: #2a1c05;
     --nav-bg: #0a1322;
     --nav-bg-2: #0d1829;
     --nav-hover: #152440;

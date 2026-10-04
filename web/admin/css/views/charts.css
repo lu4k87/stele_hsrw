@@ -59,3 +59,4 @@
 .chart-meter__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--sp-3); font-size: var(--fs-sm); }
 .chart-meter__label { color: var(--text-2); font-weight: var(--fw-medium); }
 .chart-meter__value { font-weight: var(--fw-semibold); text-align: right; }
+.chart-avail__since { color: var(--text-2); }

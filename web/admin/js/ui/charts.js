@@ -134,6 +134,7 @@ export function availabilityBand({ from, to, segments = [], pct = null, label = 
         style: { left: `${p.left}%`, width: `${p.width}%` },
         title: `online ${formatDateTime(new Date(p.a))} – ${formatTime(new Date(p.b))}`,
       }))),
+    compact && prePct ? h('div', { class: 'chart-avail__since text-sm' }, `gemessen seit ${formatDateTime(new Date(ts))}`) : null,
     compact ? null : h('div', { class: 'chart-avail__axis num', 'aria-hidden': 'true' }, ticks.map((t) => h('span', {}, t))),
     compact ? null : h('div', { class: 'chart-avail__legend', 'aria-hidden': 'true' },
       h('span', { class: 'chart-avail__key chart-avail__key--on' }, 'online'),

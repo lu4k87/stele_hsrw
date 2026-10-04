@@ -8,7 +8,7 @@ import { h, uid, useStyles, mount as fill } from '../dom.js';
 import { api, ApiError, errorMessage } from '../api.js';
 import { can } from '../session.js';
 import { icon } from '../icons.js';
-import { formatRelative } from '../format.js';
+import { formatSince } from '../format.js';
 import { openDialog } from './dialog.js';
 import { field, input, select, numberInput, setFieldErrors, clearFieldErrors } from './form.js';
 import { toast } from './toast.js';
@@ -97,7 +97,7 @@ export function pairingPicker() {
         icon(on ? 'check-circle' : 'stele', { size: 22 }),
         h('span', { class: 'wiz-pending__text' },
           h('span', { class: 'wiz-pending__code mono' }, formatCode(p.code)),
-          h('span', { class: 'text-sm text-2' }, `${deviceText(p.device_info)} · wartet seit ${formatRelative(p.created_at).replace(/^vor /, '')}`)));
+          h('span', { class: 'text-sm text-2' }, `${deviceText(p.device_info)} · wartet ${formatSince(p.created_at)}`)));
       b.addEventListener('click', () => { codeInput.value = formatCode(p.code); clearFieldErrors(el); renderList(); });
       return b;
     }));

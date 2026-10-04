@@ -59,6 +59,17 @@ export function formatRelative(v, now = new Date()) {
   return formatDateTime(d);
 }
 
+/** „seit 5 Min.“, „seit gestern, 10:00“ – frisch: „gerade eben“ (nie „seit gerade eben“) */
+export function formatSince(v, now = new Date()) {
+  const d = toDate(v);
+  if (!d) return '–';
+  const diff = (now.getTime() - d.getTime()) / 1000;
+  if (diff < 45) return 'gerade eben';
+  if (diff < 3600) return `seit ${Math.max(1, Math.round(diff / 60))} Min.`;
+  if (d.toDateString() === now.toDateString()) return `seit ${Math.round(diff / 3600)} Std.`;
+  return `seit ${formatRelative(d, now)}`;
+}
+
 /** Sekunden → „45 s“, „3:45 min“, „1 h 05 min“ */
 export function formatDuration(seconds) {
   if (seconds === null || seconds === undefined || Number.isNaN(Number(seconds))) return '–';
