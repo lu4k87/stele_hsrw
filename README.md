@@ -25,6 +25,8 @@ In fünf Minuten vom Klonen bis zur ersten eigenen Folie auf der (simulierten) S
    ./run.sh
    ```
 
+   **Windows:** Ordner kopieren oder klonen, `run.bat` doppelklicken → [Windows](#windows).
+
 2. **Vorführseite öffnen:** <http://127.0.0.1:8090/admin/show-stele-index.html>
 3. **Anmelden:** auf ein Demo-Konto klicken, z. B. *Administrator* (Schnellanmeldung nur im Testbetrieb und nur auf diesem Rechner).
 4. **Ausprobieren:**
@@ -297,6 +299,25 @@ cd stele_hsrw
   Info-Folie samt Präsentation in einem Schritt anlegen (mit Live-Vorschau und Player), alle UI-Bausteine ausprobieren
 - Player-Link der Stele: steht im Startprotokoll und im CMS unter **Stelen → Verbindung**
 - Neue Datenbank erhält Demo-Inhalte (abschaltbar, siehe Konfiguration)
+
+### Windows
+
+1. **Python ≥ 3.10** von <https://www.python.org/downloads/> installieren, Haken bei *Add python.exe to PATH*
+   (alternativ `winget install Python.Python.3.12`)
+2. **Repo holen:** `git clone` oder Ordner kopieren (USB-Stick, Netzlaufwerk)
+   - `.venv/` und `data/` dürfen fehlen; eine mitkopierte Linux-`.venv` legt `run.bat` neu an
+   - mitkopiertes `data/` läuft weiter (gleiche Datenbank, Medien, Konten)
+3. **Starten:** `run.bat` doppelklicken (oder in PowerShell `.\run.bat`)
+   - erster Start legt `.venv` an und installiert die Abhängigkeiten (inkl. `tzdata`, Zeitzonen für Windows)
+   - Fenster offen lassen; beenden mit Strg+C
+4. **Vorführseite:** <http://127.0.0.1:8090/admin/show-stele-index.html> → weiter wie im [Quick Setup](#quick-setup-vorführseite-testen) ab Schritt 3
+
+- **Optional, Videos und PDFs:** `winget install Gyan.FFmpeg` und `winget install oschwartz10612.Poppler`, danach neues
+  Fenster öffnen (PATH); prüfen mit `where ffmpeg` und `where pdftoppm`. Ohne beide läuft alles außer Video-/PDF-Import
+  (Demo-Daten dann ohne Video)
+- **Player im Vollbild:** Win+R → `chrome --kiosk "<Player-Link>"`, beenden mit Alt+F4
+- **Zweite Instanz** (PowerShell): `$env:STELECMS_PORT=8091; $env:STELECMS_DATA="$env:TEMP\stele-test"; .\run.bat`
+- **Befehle aus dieser README:** `.venv\Scripts\python.exe` statt `.venv/bin/python`
 
 ## 3. Konfiguration
 

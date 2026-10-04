@@ -8,6 +8,7 @@ from __future__ import annotations
 import html
 import http.client
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -33,7 +34,8 @@ FEEDS_EVERY_S = 600
 CLEANUP_EVERY_S = 3600
 FEED_MAX_BYTES = 2 * 1024 * 1024
 FEED_MAX_ITEMS = 30
-_PING_MS_RE = re.compile(r"time[=<]([\d.]+)\s*ms")
+_PING_MS_RE = re.compile(r"(?:time|zeit)[=<]([\d.]+)\s*ms", re.IGNORECASE)  # Linux, Windows (en/de)
+_WINDOWS = os.name == "nt"
 
 
 # ------------------------------------------------------------------ Offline
@@ -64,13 +66,17 @@ def ping(host: str) -> tuple[bool, float | None]:
     exe = shutil.which("ping")
     if not exe or not host or host.startswith("-"):
         return False, None
+    # Windows: -n Anzahl, -w Zeitgrenze in ms
+    args = ["-n", "1", "-w", "1000"] if _WINDOWS else ["-c", "1", "-W", "1"]
     try:
-        res = subprocess.run([exe, "-c", "1", "-W", "1", host], capture_output=True, timeout=5, check=False)
+        res = subprocess.run([exe, *args, host], capture_output=True, timeout=5, check=False)
     except (subprocess.TimeoutExpired, OSError):
         return False, None
-    if res.returncode != 0:
+    out = res.stdout.decode("utf-8", "replace")
+    # Windows meldet auch „Zielhost nicht erreichbar“ mit 0 → Antwort nur mit TTL
+    if res.returncode != 0 or (_WINDOWS and "TTL=" not in out.upper()):
         return False, None
-    m = _PING_MS_RE.search(res.stdout.decode("utf-8", "replace"))
+    m = _PING_MS_RE.search(out)
     return True, (float(m.group(1)) if m else None)
 
 

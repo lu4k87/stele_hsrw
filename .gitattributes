@@ -1,5 +1,7 @@
 # Einheitliche Zeilenenden (LF) auf allen Rechnern; Binärdateien unangetastet
 * text=auto eol=lf
+# Windows-Startskript braucht CRLF (cmd.exe)
+*.bat text eol=crlf
 *.png binary
 *.jpg binary
 *.jpeg binary

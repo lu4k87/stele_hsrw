@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+import subprocess
 from datetime import timedelta
 
 import pytest
@@ -288,6 +289,25 @@ def test_cleanup_and_ping(admin, app):
     conn.close()
     net = admin.get(f"/api/steles/{s['id']}").get_json()["network"]
     assert net["checked_at"] and net["ip_address"] == "127.0.0.1"
+
+
+@pytest.mark.parametrize("out, ok, ms", [
+    (b"Antwort von 10.0.0.5: Bytes=32 Zeit=3ms TTL=64", True, 3.0),
+    (b"Reply from 10.0.0.5: bytes=32 time<1ms TTL=64", True, 1.0),
+    (b"Antwort von 10.0.0.1: Zielhost nicht erreichbar.", False, None),   # Windows: Exitcode 0 ohne TTL
+])
+def test_ping_windows(monkeypatch, out, ok, ms):
+    calls = []
+
+    def fake_run(cmd, **_kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr=b"")
+
+    monkeypatch.setattr(monitor, "_WINDOWS", True)
+    monkeypatch.setattr(monitor.shutil, "which", lambda _n: "ping")
+    monkeypatch.setattr(monitor.subprocess, "run", fake_run)
+    assert monitor.ping("10.0.0.5") == (ok, ms)
+    assert calls[0] == ["ping", "-n", "1", "-w", "1000", "10.0.0.5"]
 
 
 # ------------------------------------------------------------------ Seed
