@@ -13,12 +13,14 @@ import { toast } from '../ui/toast.js';
 import { tabs } from '../ui/tabs.js';
 import { chip, presentationStatus, validityChip, contentTypeLabel } from '../ui/status.js';
 import { emptyState, errorState, loadingBlock } from '../ui/empty.js';
-import { contentStyles, contentPreview, showInUse, announce, clone } from '../ui/content-common.js';
+import { contentStyles, contentPreview, announce, clone } from '../ui/content-common.js';
 import { colorChoice } from '../ui/color-choice.js';
 import { openContentPicker } from '../ui/content-picker.js';
 import { gripButton, makeSortable, moveItem } from '../ui/sortable.js';
 import { livePreview } from '../ui/live-preview.js';
 import { itemToPayload, newItem } from '../ui/add-to-presentation.js';
+import { removePresentation, publishPresentation } from '../ui/presentation-actions.js';
+import { isEditConflict, editConflictAlert } from '../ui/edit-conflict.js';
 import { openPreview } from './presentations.js';
 
 const TRANSITIONS = [
@@ -76,6 +78,7 @@ export default async function mount(root, ctx) {
   let selKey = items[0]?._k ?? null;
   let tab = 'slide';
   let problems = new Map();          // item_id → Meldung (nach 422 beim Veröffentlichen)
+  let conflict = null;               // 409 edit_conflict: jemand anderes hat gespeichert → kein Autosave mehr, „Neu laden“
   const save = { meta: false, items: false, running: null, error: null, retryTimer: null, lastToast: 0 };
   let lastPart = null;               // welcher Teil gerade gesendet wird (für Wiederholen bei Fehler)
 
@@ -131,12 +134,14 @@ export default async function mount(root, ctx) {
     else if (kind === 'error') {
       fill(saveStatus, icon('alert-circle', { size: 16 }), h('span', {}, 'Speichern fehlgeschlagen – '),
         h('button', { type: 'button', class: 'btn btn--link', onClick: () => flush() }, 'erneut versuchen'));
-    } else fill(saveStatus, icon('eye', { size: 16 }), 'Nur Ansicht');
+    } else if (kind === 'conflict') fill(saveStatus, icon('alert-circle', { size: 16 }), 'Nicht gespeichert – inzwischen anderweitig geändert');
+    else fill(saveStatus, icon('eye', { size: 16 }), 'Nur Ansicht');
   }
   const debouncedFlush = debounce(() => flush(), SAVE_DELAY);
   function queueSave(kind) {
     if (!canEdit) return;
     save[kind] = true;
+    if (conflict) return;            // wartet auf „Neu laden“
     clearTimeout(save.retryTimer);
     ctx.setDirty('Die letzten Änderungen werden noch gespeichert. Beim sofortigen Verlassen können sie verloren gehen.');
     paintSave('pending');
@@ -146,6 +151,7 @@ export default async function mount(root, ctx) {
     debouncedFlush.cancel();
     clearTimeout(save.retryTimer);
     if (save.running) return save.running;
+    if (conflict) return Promise.resolve(false);
     if (!save.meta && !save.items) return Promise.resolve(true);
     save.running = (async () => {
       save.error = null;
@@ -155,14 +161,14 @@ export default async function mount(root, ctx) {
           if (save.meta) {
             save.meta = false;
             lastPart = 'meta';
-            const res = await api.patch(`/api/presentations/${id}`, clone(meta));
+            const res = await api.patch(`/api/presentations/${id}`, { ...clone(meta), expected_updated_at: pres.updated_at });
             applyServer(res, null);
           }
           if (save.items) {
             save.items = false;
             lastPart = 'items';
             const keys = items.map((it) => it._k);
-            const res = await api.put(`/api/presentations/${id}/items`, { items: items.map(itemToPayload) });
+            const res = await api.put(`/api/presentations/${id}/items`, { items: items.map(itemToPayload), expected_updated_at: pres.updated_at });
             applyServer(res, keys);
           }
         }
@@ -174,6 +180,13 @@ export default async function mount(root, ctx) {
         // Nicht gespeicherten Teil wieder vormerken
         save.meta = save.meta || lastPart === 'meta';
         save.items = save.items || lastPart === 'items';
+        if (isEditConflict(err)) {
+          conflict = err;
+          paintSave('conflict');
+          ctx.setDirty('Die Änderungen hier wurden nicht gespeichert, weil die Präsentation inzwischen anderweitig geändert wurde.');
+          renderBanners();
+          return false;
+        }
         paintSave('error');
         ctx.setDirty('Einige Änderungen konnten nicht gespeichert werden. Beim Verlassen gehen sie verloren.');
         const now = Date.now();
@@ -205,6 +218,7 @@ export default async function mount(root, ctx) {
     if (!res) return;
     const prevStatus = pres.status;
     const prevReview = pres.review_state;
+    const prevChanged = pres.review_changed;
     pres = { ...pres, ...res };
     if (keys && Array.isArray(res.items)) {
       res.items.forEach((srv, i) => {
@@ -215,7 +229,7 @@ export default async function mount(root, ctx) {
         it.effective_duration_s = srv.effective_duration_s;
       });
     }
-    if (prevStatus !== pres.status || prevReview !== pres.review_state) renderHeaderParts();
+    if (prevStatus !== pres.status || prevReview !== pres.review_state || prevChanged !== pres.review_changed) renderHeaderParts();
     else paintStatus();
   }
 
@@ -285,13 +299,23 @@ export default async function mount(root, ctx) {
     renderBanners();
   }
 
+  function reload() {
+    debouncedFlush.cancel();
+    clearTimeout(save.retryTimer);
+    save.meta = false; save.items = false;
+    ctx.setDirty(false);
+    ctx.navigate(`/presentations/${id}`, { replace: true });
+  }
+
   function renderBanners() {
     const out = [];
+    if (conflict) out.push(editConflictAlert(conflict, { onReload: reload }));
     const by = pres.review_by?.display_name;
     if (pres.review_state === 'requested') {
       out.push(h('div', { class: 'alert' }, icon('send'), h('div', { class: 'alert__body' },
         h('div', { class: 'alert__title' }, `Freigabe angefragt${by ? ` von ${by}` : ''}${pres.review_at ? ` (${formatRelative(pres.review_at)})` : ''}`),
         pres.review_note ? h('div', { class: 'alert__text' }, `Notiz: ${pres.review_note}`) : null,
+        pres.review_changed ? h('div', { class: 'alert__text' }, h('strong', {}, 'Seit dem Einreichen geändert'), ' (Design, Touch-Menü oder Inhalte) – bitte den aktuellen Stand in der Vorschau prüfen.') : null,
         h('div', { class: 'alert__text' }, canPublish ? 'Bitte prüfen und veröffentlichen oder mit Begründung ablehnen.' : 'Eine Person mit Veröffentlichungsrecht prüft den Entwurf.'),
         canPublish ? h('div', { class: 'alert__actions' },
           button({ label: 'Veröffentlichen', icon: 'broadcast', variant: 'primary', size: 'sm', onClick: () => publish() }),
@@ -764,7 +788,8 @@ export default async function mount(root, ctx) {
 
   async function doPublish(noteText) {
     try {
-      const res = await api.post(`/api/presentations/${id}/publish`, noteText ? { note: noteText } : {});
+      const res = await publishPresentation(id, noteText ? { note: noteText } : {});
+      if (!res) return true;
       problems = new Map();
       applyServer(res, null);
       renderHeaderParts();
@@ -870,26 +895,14 @@ export default async function mount(root, ctx) {
   }
 
   async function remove() {
-    const used = pres.used_by || [];
-    const ok = await confirmDialog({
-      title: `„${meta.name}“ löschen?`,
-      message: used.length
-        ? `Die Präsentation ist auf ${used.map((u) => u.stele_name).join(', ')} eingeplant und kann erst gelöscht werden, wenn sie dort ersetzt wurde.`
-        : 'Die Präsentation wird endgültig entfernt. Die Inhalte bleiben in der Mediathek.',
-      confirmLabel: 'Präsentation löschen', danger: true,
-    });
+    // Offene Änderungen zuerst speichern; Speicher-Flags erst nach erfolgreichem Löschen verwerfen
+    const ok = await removePresentation({ ...pres, name: meta.name }, { beforeDelete: () => flush() });
     if (!ok) return;
-    try {
-      debouncedFlush.cancel();
-      save.meta = false; save.items = false;
-      await api.del(`/api/presentations/${id}`);
-      ctx.setDirty(false);
-      toast.success(`„${meta.name}“ gelöscht.`);
-      ctx.navigate('/presentations');
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) await showInUse({ title: 'Präsentation kann nicht gelöscht werden', message: err.message, usages: err.details?.usages || [] });
-      else toast.error(errorMessage(err));
-    }
+    debouncedFlush.cancel();
+    clearTimeout(save.retryTimer);
+    save.meta = false; save.items = false;
+    ctx.setDirty(false);
+    ctx.navigate('/presentations');
   }
 
   // ---------- Aufbau ----------

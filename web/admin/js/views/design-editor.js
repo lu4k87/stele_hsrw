@@ -17,6 +17,8 @@ import { contentRefField } from '../ui/content-ref.js';
 import { colorChoice, contrastWarning } from '../ui/color-choice.js';
 import { gripButton, makeSortable, moveItem } from '../ui/sortable.js';
 import { livePreview } from '../ui/live-preview.js';
+import { affectedPresentations } from '../ui/presentation-actions.js';
+import { isEditConflict, editConflictAlert } from '../ui/edit-conflict.js';
 import { usedBy } from './touch-menus.js';
 
 const SAMPLE = {
@@ -78,6 +80,7 @@ export default async function mount(root, ctx) {
     ] : [],
   });
   const afterSave = h('div', { role: 'status', 'aria-live': 'polite', hidden: true });
+  const conflictBox = h('div', { hidden: true });
   const roAlert = ro ? h('div', { class: 'alert alert--neutral' }, icon('eye'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Nur Ansicht – zum Bearbeiten fehlt das Recht „Designs bearbeiten“.'))) : null;
 
@@ -243,22 +246,30 @@ export default async function mount(root, ctx) {
     payload.footer.ticker_rss_url = url;
     saving = true;
     saveBtn.setAttribute('aria-busy', 'true');
+    // Stand beim Absenden: Server-Antwort nur übernehmen, wenn währenddessen nichts geändert wurde
+    const sent = clone({ name, cfg });
     try {
-      const res = await api.patch(`/api/designs/${id}`, { name: name.trim(), config: payload });
+      const res = await api.patch(`/api/designs/${id}`, { name: name.trim(), config: payload, expected_updated_at: design.updated_at });
       design = res;
-      name = res.name;
-      cfg = clone(res.config);
-      cfg.footer.ticker_items = [...(cfg.footer.ticker_items || [])];
-      saved = clone({ name, cfg });
-      renderTicker();
-      header.titleEl.textContent = name;
-      ctx.setTitle(name);
+      const srvCfg = clone(res.config);
+      srvCfg.footer.ticker_items = [...(srvCfg.footer.ticker_items || [])];
+      saved = clone({ name: res.name, cfg: srvCfg });
+      if (sameJson({ name, cfg }, sent)) {
+        name = res.name;
+        cfg = srvCfg;
+        renderTicker();
+      }
+      header.titleEl.textContent = res.name;
+      ctx.setTitle(res.name);
       fill(usedBox, usedBy(res.used_by || []));
       changed(false);
       showAffected(res.used_by || []);
       toast.success('Design gespeichert.');
     } catch (err) {
-      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
+      if (isEditConflict(err)) {
+        fill(conflictBox, editConflictAlert(err, { onReload: reload }));
+        conflictBox.hidden = false;
+      } else if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
         const first = Object.entries(err.fields)[0];
         toast.error(`${err.message} ${first[1]}`);
       } else toast.error(errorMessage(err));
@@ -269,33 +280,14 @@ export default async function mount(root, ctx) {
   }
 
   function showAffected(list) {
-    const open = list.filter((p) => p.status === 'changed');
-    afterSave.hidden = !open.length;
-    if (!open.length) { fill(afterSave); return; }
-    fill(afterSave, h('div', { class: 'alert alert--warning' }, icon('alert-triangle'), h('div', { class: 'alert__body' },
-      h('div', { class: 'alert__title' }, `Änderungen offen in ${plural(open.length, 'Präsentation', 'Präsentationen')}`),
-      h('div', { class: 'alert__text' }, canPublish ? 'Auf den Stelen erscheint das neue Design erst nach dem Veröffentlichen. Jetzt veröffentlichen?' : 'Auf den Stelen erscheint das neue Design erst, wenn die Präsentationen veröffentlicht werden.'),
-      h('ul', { class: 'de-affected' }, open.map((p) => {
-        const row = h('li', {}, h('a', { href: `#/presentations/${p.id}` }, p.name));
-        if (canPublish) {
-          row.append(button({ label: 'Veröffentlichen', icon: 'broadcast', variant: 'secondary', size: 'sm', onClick: async (e) => {
-            const btn = e.currentTarget;
-            const ok = await confirmDialog({ title: `„${p.name}“ veröffentlichen?`, message: 'Der aktuelle Entwurf der Präsentation (inkl. neuem Design) geht auf die Stelen, auf denen sie läuft.', confirmLabel: 'Veröffentlichen', icon: 'broadcast' });
-            if (!ok) return;
-            btn.setAttribute('aria-busy', 'true');
-            try {
-              await api.post(`/api/presentations/${p.id}/publish`, {});
-              toast.success(`„${p.name}“ veröffentlicht.`);
-              p.status = 'published';
-              showAffected(list);
-              ctx.refreshNav();
-            } catch (err) {
-              toast.error(errorMessage(err));
-            } finally { btn.removeAttribute('aria-busy'); }
-          } }));
-        }
-        return row;
-      })))));
+    const box = affectedPresentations(list, { what: 'das neue Design', onPublished: () => ctx.refreshNav() });
+    fill(afterSave, box);
+    afterSave.hidden = !box;
+  }
+
+  function reload() {
+    ctx.setDirty(false);
+    ctx.navigate(`/designs/${id}`, { replace: true });
   }
 
   async function duplicate() {
@@ -346,7 +338,7 @@ export default async function mount(root, ctx) {
   if (ro) for (const el of formRoot.querySelectorAll('.cu-color input, .cu-color button')) el.disabled = true;
 
   fill(root, page({ wide: true, className: 'de-page' },
-    header, roAlert, afterSave,
+    header, roAlert, conflictBox, afterSave,
     h('div', { class: 'de-layout' },
       h('div', { class: 'stack' }, contrast, formRoot),
       h('aside', { class: 'de-side' }, card({ title: 'Vorschau', icon: 'eye', body: h('div', { class: 'stack' }, pv.el, h('p', { class: 'text-2 text-sm' }, 'Mit einer Beispielfolie. Uhr und Laufband laufen wie auf der Stele.')) })))));

@@ -19,6 +19,8 @@ import { iconPickerButton, iconLabel } from '../ui/icon-picker.js';
 import { colorChoice } from '../ui/color-choice.js';
 import { gripButton, makeSortable, moveItem } from '../ui/sortable.js';
 import { livePreview } from '../ui/live-preview.js';
+import { affectedPresentations } from '../ui/presentation-actions.js';
+import { isEditConflict, editConflictAlert } from '../ui/edit-conflict.js';
 import { usedBy } from './touch-menus.js';
 
 const MAX_TILES = 12;
@@ -79,6 +81,8 @@ export default async function mount(root, ctx) {
   });
   const usedHint = (menu.used_by || []).length ? h('div', { class: 'alert' }, icon('info'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Änderungen erscheinen auf den Stelen erst, nachdem die betroffenen Präsentationen erneut veröffentlicht wurden.'))) : null;
+  const conflictBox = h('div', { hidden: true });
+  const afterSave = h('div', { role: 'status', 'aria-live': 'polite', hidden: true });
   const roAlert = ro ? h('div', { class: 'alert alert--neutral' }, icon('eye'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Nur Ansicht – zum Bearbeiten fehlt das Recht „Touch-Menüs bearbeiten“.'))) : null;
 
@@ -304,20 +308,29 @@ export default async function mount(root, ctx) {
     if (!name.trim()) { setFieldErrors(formRoot, { name: 'Bitte einen Namen eingeben.' }); return; }
     saving = true;
     saveBtn.setAttribute('aria-busy', 'true');
+    // Stand beim Absenden: Server-Antwort nur übernehmen, wenn währenddessen nichts geändert wurde
+    const sent = clone({ name, cfg });
     try {
-      const res = await api.patch(`/api/touch-menus/${id}`, { name: name.trim(), config: clone(cfg) });
+      const res = await api.patch(`/api/touch-menus/${id}`, { name: name.trim(), config: clone(cfg), expected_updated_at: menu.updated_at });
       menu = res;
-      name = res.name;
-      cfg = stripConfig(res.config, briefs);
-      saved = clone({ name, cfg });
-      header.titleEl.textContent = name;
-      ctx.setTitle(name);
-      renderTiles();
-      changed();
-      const n = (res.used_by || []).length;
-      toast.success(n ? `Gespeichert. Sichtbar auf den Stelen nach erneutem Veröffentlichen von ${plural(n, 'Präsentation', 'Präsentationen')}.` : 'Touch-Menü gespeichert.');
+      const srvCfg = stripConfig(res.config, briefs);
+      saved = clone({ name: res.name, cfg: srvCfg });
+      const untouched = sameJson({ name, cfg }, sent);
+      if (untouched) {
+        name = res.name;
+        cfg = srvCfg;
+        renderTiles();
+      }
+      header.titleEl.textContent = res.name;
+      ctx.setTitle(res.name);
+      changed(untouched);
+      showAffected(res.used_by || []);
+      toast.success('Touch-Menü gespeichert.');
     } catch (err) {
-      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
+      if (isEditConflict(err)) {
+        fill(conflictBox, editConflictAlert(err, { onReload: reload }));
+        conflictBox.hidden = false;
+      } else if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
         const mapped = {};
         for (const [k, v] of Object.entries(err.fields)) mapped[k.replace(/^config\./, '')] = v;
         const rest = setFieldErrors(formRoot, mapped);
@@ -328,6 +341,17 @@ export default async function mount(root, ctx) {
       saving = false;
       saveBtn.removeAttribute('aria-busy');
     }
+  }
+
+  function showAffected(list) {
+    const box = affectedPresentations(list, { what: 'das geänderte Touch-Menü', onPublished: () => ctx.refreshNav() });
+    fill(afterSave, box);
+    afterSave.hidden = !box;
+  }
+
+  function reload() {
+    ctx.setDirty(false);
+    ctx.navigate(`/touch-menus/${id}`, { replace: true });
   }
 
   async function duplicate() {
@@ -385,7 +409,7 @@ export default async function mount(root, ctx) {
   );
 
   fill(root, page({ wide: true, className: 'tm-page' },
-    header, roAlert, usedHint,
+    header, roAlert, conflictBox, usedHint, afterSave,
     h('div', { class: 'tm-layout' },
       formRoot,
       h('aside', { class: 'tm-side' }, card({

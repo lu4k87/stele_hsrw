@@ -6,13 +6,14 @@ import { can } from '../session.js';
 import { formatDuration, formatRelative, formatDateTime, plural } from '../format.js';
 import { page, pageHeader, button } from '../ui/page.js';
 import { field, input, select, searchInput, setFieldErrors, clearFieldErrors } from '../ui/form.js';
-import { openDialog, confirmDialog } from '../ui/dialog.js';
+import { openDialog } from '../ui/dialog.js';
 import { menuButton } from '../ui/menu.js';
 import { toast } from '../ui/toast.js';
 import { presentationStatus } from '../ui/status.js';
 import { emptyState, errorState, skeletonGrid } from '../ui/empty.js';
 import { playerFrame, playerUrls } from '../ui/player-frame.js';
-import { contentStyles, showInUse } from '../ui/content-common.js';
+import { contentStyles } from '../ui/content-common.js';
+import { removePresentation } from '../ui/presentation-actions.js';
 
 const FILTERS = [
   { value: '', label: 'Alle' },
@@ -186,24 +187,7 @@ export default async function mount(root, ctx) {
   }
 
   async function remove(p) {
-    const used = p.used_by || [];
-    const ok = await confirmDialog({
-      title: `„${p.name}“ löschen?`,
-      message: used.length
-        ? `Die Präsentation ist auf ${used.map((u) => u.stele_name).join(', ')} eingeplant und kann erst gelöscht werden, wenn sie dort ersetzt wurde.`
-        : 'Die Präsentation mit allen Folien-Einstellungen wird endgültig entfernt. Die Inhalte bleiben in der Mediathek.',
-      confirmLabel: 'Präsentation löschen',
-      danger: true,
-    });
-    if (!ok) return;
-    try {
-      await api.del(`/api/presentations/${p.id}`);
-      toast.success(`„${p.name}“ gelöscht.`);
-      load();
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) await showInUse({ title: 'Präsentation kann nicht gelöscht werden', message: err.message, usages: err.details?.usages || [] });
-      else toast.error(errorMessage(err));
-    }
+    if (await removePresentation(p)) load();
   }
 
   load();

@@ -19,6 +19,9 @@ export class ApiError extends Error {
   }
 }
 
+const TIMEOUT_MS = 20000;
+const timeoutError = () => new ApiError({ status: 0, code: 'timeout', message: 'Der Server antwortet nicht (Zeitüberschreitung). Bitte Verbindung prüfen und erneut versuchen.' });
+
 const DEFAULT_MESSAGES = {
   0: 'Keine Verbindung zum Server. Bitte Verbindung prüfen und erneut versuchen.',
   400: 'Die Anfrage war ungültig.',
@@ -65,11 +68,29 @@ function toApiError(status, data, path) {
   return e;
 }
 
+/** Abbruch durch den Aufrufer (signal) oder nach timeout ms – was zuerst kommt. */
+function withTimeout(signal, timeout) {
+  if (!timeout || typeof AbortSignal.timeout !== 'function') return signal;
+  const t = AbortSignal.timeout(timeout);
+  if (!signal) return t;
+  return typeof AbortSignal.any === 'function' ? AbortSignal.any([signal, t]) : signal;
+}
+
+/** Antwort lesen; unlesbar → null, Abbruch/Zeitüberschreitung beim Lesen weiterreichen. */
+function readBody(read) {
+  return read().catch((err) => {
+    if (err?.name === 'TimeoutError') throw timeoutError();
+    if (err?.name === 'AbortError') throw err;
+    return null;
+  });
+}
+
 // background: true = Hintergrund-Abfrage (Polling); zählt nicht als Benutzeraktivität und
 // verlängert die Sitzung serverseitig nicht (Header X-Background-Poll).
-async function request(method, path, { body, query, signal, headers = {}, raw = false, background = false } = {}) {
+// timeout: Abbruch nach ms (Standard 20 s, 0 = ohne) → ApiError status 0, code 'timeout'.
+async function request(method, path, { body, query, signal, headers = {}, raw = false, background = false, timeout = TIMEOUT_MS } = {}) {
   const url = buildUrl(path, query);
-  const opts = { method, credentials: 'same-origin', headers: { Accept: 'application/json', ...headers }, signal };
+  const opts = { method, credentials: 'same-origin', headers: { Accept: 'application/json', ...headers }, signal: withTimeout(signal, timeout) };
   if (background) opts.headers['X-Background-Poll'] = '1';
   if (body instanceof FormData) {
     opts.body = body;
@@ -83,21 +104,22 @@ async function request(method, path, { body, query, signal, headers = {}, raw = 
   try {
     res = await fetch(url, opts);
   } catch (err) {
-    if (err && err.name === 'AbortError') throw err;
+    if (err?.name === 'TimeoutError') throw timeoutError();
+    if (err?.name === 'AbortError') throw err;
     throw new ApiError({ status: 0, code: 'network', message: DEFAULT_MESSAGES[0] });
   }
   if (!background) bus.emit('api:activity');
 
   if (raw) {
     if (!res.ok) {
-      const data = await res.json().catch(() => null);
+      const data = await readBody(() => res.json());
       throw toApiError(res.status, data, path);
     }
     return res;
   }
   if (res.status === 204 || res.status === 304) return null;
   const type = res.headers.get('content-type') || '';
-  const data = type.includes('application/json') ? await res.json().catch(() => null) : await res.text().catch(() => null);
+  const data = await readBody(() => (type.includes('application/json') ? res.json() : res.text()));
   if (!res.ok) throw toApiError(res.status, typeof data === 'object' ? data : null, path);
   return data;
 }

@@ -41,7 +41,7 @@ export default async function mount(root, ctx) {
 
 **format.js** – `formatDateTime`, `formatDate`, `formatTime`, `formatWeekday`, `formatRelative`, `formatSince` („seit 5 Min.“, frisch „gerade eben“), `formatDuration(s)`, `formatBytes`, `formatNumber`, `formatPercent`, `plural(n, 'Folie', 'Folien')`, `formatDays([1..7])`, `WEEKDAYS_SHORT/LONG`.
 
-**api.js** – `api.get/post/put/patch/del(path, body?, { query, signal, background })`, `api.upload(path, formData, { onProgress, signal })`, `api.download(path, query)`, `ApiError {status, code, message, fields, details}`, `errorMessage(err)`.
+**api.js** – `api.get/post/put/patch/del(path, body?, { query, signal, background, timeout })` (Standard 20 s, danach `ApiError` code `timeout`), `api.upload(path, formData, { onProgress, signal })`, `api.download(path, query)`, `ApiError {status, code, message, fields, details}`, `errorMessage(err)`.
 
 **session.js** – `session` (user, permissions, app), `can(p)`, `canAny(...)`, `canAll(...)`, `isAdmin()`.
 
@@ -64,6 +64,10 @@ export default async function mount(root, ctx) {
 **ui/status.js** – `chip(kind, label, icon)`, `presentationStatus(p)`, `steleStatus(s)`, `validityChip(v)`, `warningList(warnings)`, `CONTENT_TYPES`, `contentTypeLabel/Icon(type)`, `PRESENTATION_STATUS`, `STELE_STATUS` (eine Tabelle für Chip, Karte, Tooltip, Stelen-Pille, Navi-Badge: `kind`, `label`, `icon`, `pill`, `alert`, `hint`), `steleState(s)`.
 
 **ui/empty.js** – `emptyState({ icon, title, text, actions })`, `loadingBlock(text)`, `errorState({ title, error, onRetry })`, `skeletonLines(n)`, `skeletonGrid(n, min)`.
+
+**ui/presentation-actions.js** – `removePresentation(p, { beforeDelete })` (in Verwendung → Hinweis statt Löschen), `publishPresentation(id, body)` (Rückfrage bei 409 `changed_since_review`), `affectedPresentations(list, { what, onPublished })` (Hinweis „Änderungen offen in n Präsentationen“ mit Veröffentlichen).
+
+**ui/edit-conflict.js** – `isEditConflict(err)`, `editConflictAlert(err, { onReload })` (409 `edit_conflict`: Hinweis mit „Neu laden“).
 
 **ui/toast.js** – `toast.success/info/warning/error(msg, { action: { label, onClick } })`.
 

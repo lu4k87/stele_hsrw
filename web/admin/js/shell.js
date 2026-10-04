@@ -14,12 +14,13 @@ import { loadingBlock, errorState, emptyState } from './ui/empty.js';
 import { page, pageHeader, card } from './ui/page.js';
 import { getThemePref, setThemePref, THEME_OPTIONS } from './theme.js';
 import { openPasswordDialog } from './account.js';
-import { formatRelative } from './format.js';
+import { formatRelative, formatTime } from './format.js';
 import { zoomControl, themeToggle, zoomMenuItems } from './ui/display-controls.js';
 import { formatZoom } from './zoom.js';
 
 const COLLAPSE_KEY = 'stelecms.nav.collapsed';
 const POLL_MS = 20000;
+const CONN_FAILS = 2;          // so viele fehlgeschlagene Hintergrund-Abrufe in Folge → „Verbindung unterbrochen“
 
 export function permOk(perm) {
   if (!perm) return true;
@@ -101,13 +102,14 @@ export function createShell() {
   const envBadge = h('button', { type: 'button', class: 'env-badge', title: 'Was bedeutet Testbetrieb?' },
     icon('info', { size: 16 }), h('span', { class: 'env-badge__text' }, 'Testbetrieb · lokal'));
   const stelePill = h('a', { class: 'stele-pill', href: '#/steles', hidden: true });
+  const connPill = h('span', { class: 'stele-pill stele-pill--offline', role: 'status', hidden: true });
   const userBtn = h('button', { type: 'button', class: 'user-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
   const zoomCtl = zoomControl();
   const themeBtn = themeToggle();
   const topbar = h('header', { class: 'topbar' },
     menuBtn, crumbs,
     h('div', { class: 'topbar__right' },
-      envBadge, stelePill,
+      envBadge, connPill, stelePill,
       h('div', { class: 'topbar__display' }, zoomCtl.el, themeBtn.el),
       userBtn),
   );
@@ -228,10 +230,31 @@ export function createShell() {
     stelePill.setAttribute('aria-label', `Stelen-Status: ${name}, ${state}`);
   }
 
+  // Verbindung: Ausfall erst nach CONN_FAILS Fehlschlägen melden (einzelne Aussetzer bleiben still)
+  const conn = { fails: 0, lost: false, lastOk: null };
+  function setConnLost(lost) {
+    if (lost === conn.lost) return;
+    conn.lost = lost;
+    connPill.hidden = !lost;
+    if (!lost) { connPill.replaceChildren(); toast.success('Verbindung zum Server wiederhergestellt.'); return; }
+    const since = conn.lastOk ? `Stand ${formatTime(conn.lastOk)}` : 'noch kein Stand';
+    connPill.title = 'Der Server antwortet nicht. Angezeigte Daten können veraltet sein; neue Versuche laufen automatisch.';
+    connPill.replaceChildren(icon('wifi-off'), h('span', { class: 'stele-pill__name' }, 'Verbindung unterbrochen'), h('span', { class: 'stele-pill__state' }, since));
+    connPill.setAttribute('aria-label', `Verbindung zum Server unterbrochen – ${since}`);
+  }
+
+  let polling = false;
+  let pollAgain = false;           // Anstoß (refreshNav) während eines laufenden Abrufs → danach nachholen
   async function poll() {
     if (!session.authenticated || document.hidden) return;
+    if (polling) { pollAgain = true; return; }
+    polling = true;
+    pollAgain = false;
     try {
       const d = await api.get('/api/dashboard', { background: true });
+      conn.fails = 0;
+      conn.lastOk = new Date();
+      setConnLost(false);
       lastDashboard = d;
       badgeState.reviews = can('presentations.publish') && Array.isArray(d.reviews) ? d.reviews.length : 0;
       badgeState.offline = Array.isArray(d.steles) ? d.steles.filter((s) => s.status === 'offline').length : 0;
@@ -242,7 +265,16 @@ export function createShell() {
       applyBadges();
       renderStelePill(can('steles.view') ? d.steles : null);
       bus.emit('dashboard:update', d);
-    } catch { /* Hintergrundabfrage – Fehler zeigt die jeweilige Ansicht */ }
+    } catch (err) {
+      // Netz, Zeitüberschreitung, Serverfehler zählen; 401 übernimmt der Sitzungsablauf
+      if (err?.status === 0 || err?.status >= 500) {
+        conn.fails += 1;
+        if (conn.fails >= CONN_FAILS) setConnLost(true);
+      }
+    } finally {
+      polling = false;
+      if (pollAgain) poll();
+    }
   }
   const onVisible = () => { if (!document.hidden) poll(); };
   document.addEventListener('visibilitychange', onVisible);

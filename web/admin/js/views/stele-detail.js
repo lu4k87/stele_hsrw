@@ -17,7 +17,7 @@ import { emptyState, errorState, loadingBlock } from '../ui/empty.js';
 import { playerFrame, playerUrls } from '../ui/player-frame.js';
 import { meter } from '../ui/charts.js';
 import {
-  COMMANDS, sendCommand, nowPlaying, nextChangeText, eventLevelChip, copyField, kioskCommand, agentCommand,
+  COMMANDS, sendCommand, commandBlocked, commandHint, nowPlaying, nextChangeText, eventLevelChip, copyField, kioskCommand, agentCommand,
   fetchPresentations, presentationOptions, playerSummary,
 } from '../ui/stele-ui.js';
 import { resolutionField, validateIp, openPairDialog } from '../ui/stele-wizard.js';
@@ -51,17 +51,20 @@ export default async function mount(root, ctx) {
   const statusSlot = h('span', { class: 'cluster' });
   const metaSlot = h('p', { class: 'sd-meta text-2' });
   const headActions = [];
+  const cmdButtons = new Map();   // Befehl → Knopf (gesperrt, solange sich die Stele nie gemeldet hat)
+  const cmdHintSlot = h('div');
   if (canControl) {
     for (const cmd of ['reload', 'identify', 'screenshot']) {
       const c = COMMANDS[cmd];
       const b = button({ label: c.label, icon: c.icon, onClick: async () => { b.setAttribute('aria-busy', 'true'); await sendCommand(stele, cmd); b.removeAttribute('aria-busy'); refreshLog(); } });
       if (cmd === 'screenshot') b.classList.add('sd-hide-sm');
+      cmdButtons.set(cmd, b);
       headActions.push(b);
     }
   }
   const moreItems = () => [
     canControl ? { label: COMMANDS.screenshot.label, icon: 'camera', onClick: () => sendCommand(stele, 'screenshot').then(refreshLog) } : null,
-    canControl ? { label: COMMANDS.clear_cache.label, icon: 'trash', hint: 'Player lädt alle Dateien neu', onClick: () => sendCommand(stele, 'clear_cache').then(refreshLog) } : null,
+    canControl ? { label: COMMANDS.clear_cache.label, icon: 'trash', hint: commandBlocked(stele, 'clear_cache') ? 'Erst nach der ersten Meldung der Stele' : 'Player lädt alle Dateien neu', disabled: !!commandBlocked(stele, 'clear_cache'), onClick: () => sendCommand(stele, 'clear_cache').then(refreshLog) } : null,
     canManage ? { separator: true } : null,
     canManage ? { label: 'Erneut koppeln …', icon: 'link', onClick: () => repair() } : null,
     canManage ? { label: 'Schlüssel erneuern …', icon: 'key', hint: 'Alter Player-Link wird ungültig', onClick: () => rotateKey() } : null,
@@ -75,6 +78,14 @@ export default async function mount(root, ctx) {
   function renderHead() {
     header.titleEl.textContent = stele.name;
     fill(statusSlot, steleStatus(stele));
+    for (const [cmd, b] of cmdButtons) {
+      const blocked = commandBlocked(stele, cmd);
+      b.disabled = !!blocked;
+      if (blocked) b.title = blocked; else b.removeAttribute('title');
+    }
+    const hint = commandHint(stele);
+    fill(cmdHintSlot, hint);
+    cmdHintSlot.hidden = !hint;
     fill(metaSlot, ...[stele.location, stele.ip_address ? h('span', { class: 'mono' }, stele.ip_address) : null,
       stele.last_seen_at ? `zuletzt gemeldet ${formatRelative(stele.last_seen_at)}` : 'noch nie gemeldet']
       .filter(Boolean).flatMap((x, i) => (i ? [' · ', x] : [x])));
@@ -451,20 +462,24 @@ export default async function mount(root, ctx) {
     renderConnection();
   }
   for (const el of Object.values(panels)) t.panel.append(el);
-  root.append(page({ wide: false }, header, h('div', {}, t.el, t.panel)));
+  root.append(page({ wide: false }, header, cmdHintSlot, h('div', {}, t.el, t.panel)));
   renderAll();
   renderDefault();
   showTab(initial);
 
+  let polling = false;
   const timer = setInterval(async () => {
-    if (document.hidden) return;
+    if (document.hidden || polling) return;
+    polling = true;
     try {
       const s = await api.get(`/api/steles/${id}`, { signal: ctx.signal, background: true });
       stele = { ...s, player_url: s.player_url || stele.player_url };
       renderAll();
       renderDefault();
-      if (!panels.log.hidden) refreshLog(true);
-    } catch { /* Hintergrund – nächster Versuch folgt */ }
+      if (!panels.log.hidden) await refreshLog(true);
+    } catch { /* Hintergrund – nächster Versuch folgt */ } finally {
+      polling = false;
+    }
   }, POLL_MS);
   cleanups.push(() => clearInterval(timer));
 

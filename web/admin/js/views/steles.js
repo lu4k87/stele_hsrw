@@ -97,7 +97,10 @@ export default async function mount(root, ctx) {
     if (content.firstChild !== cardsGrid) fill(content, cardsGrid);
   }
 
+  let loading = false;
   async function load({ background = false } = {}) {
+    if (loading && background) return;   // Polling: kein zweiter Abruf, solange einer läuft
+    loading = true;
     try {
       const r = await api.get('/api/steles', { signal: ctx.signal, background });
       steles = r.items || [];
@@ -105,6 +108,8 @@ export default async function mount(root, ctx) {
     } catch (err) {
       if (err.name === 'AbortError') return;
       if (!background || !steles) fill(content, card({ body: errorState({ error: err, onRetry: () => load() }) }));
+    } finally {
+      loading = false;
     }
   }
 

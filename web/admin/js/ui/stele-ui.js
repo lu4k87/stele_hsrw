@@ -3,6 +3,8 @@
 //   steleCard(stele, { live: true })        → Karte mit Status, läuft jetzt, nächster Wechsel, Aktionen; .update(stele), .destroy()
 //   nowPlaying(stele) / nextChange(stele)   → Textbausteine
 //   sendCommand(stele, 'reload')            → Befehl senden mit Rückmeldung
+//   commandBlocked(stele, cmd)              → Grund, warum der Befehl nicht geht (Stele nie gemeldet), sonst null
+//   commandHint(stele)                      → sichtbarer Hinweis dazu oder null
 //   livePreview(steleId)                    → aufklappbare Live-Ansicht (Player im Modus mirror), .destroy()
 //   copyField({ label, value })             → Nur-Lese-Feld mit „Kopieren“
 //   kioskCommand(url), agentCommand(url)    → Aufrufe für den Stelen-PC
@@ -69,11 +71,30 @@ export function lastSeenText(stele) {
   return `zuletzt gemeldet ${formatRelative(stele.last_seen_at)}`;
 }
 
+// Spiegel von COMMAND_TTL_S (server/stelecms/steles.py): nicht abgeholte Befehle verfallen
+const COMMAND_TTL_MIN = 10;
+const NEVER_REASON = 'Die Stele hat sich noch nie gemeldet. Befehle gehen erst, wenn sie gekoppelt ist und läuft.';
+
+/** Grund, warum der Befehl nicht sinnvoll ist, oder null. Screenshot läuft über den Stelen-PC-Agent und bleibt möglich. */
+export function commandBlocked(stele, command = 'reload') {
+  return stele?.status === 'never' && command !== 'screenshot' ? NEVER_REASON : null;
+}
+
+/** Sichtbarer Grund für gesperrte Befehls-Knöpfe (nur mit steles.control) oder null. */
+export function commandHint(stele) {
+  if (!can('steles.control') || !commandBlocked(stele)) return null;
+  const ic = icon('info', { size: 16 });
+  ic.style.flex = 'none';
+  return h('p', { class: 'cluster text-sm', style: { flexWrap: 'nowrap', alignItems: 'flex-start' } }, ic, h('span', {}, NEVER_REASON));
+}
+
 export async function sendCommand(stele, command) {
   const c = COMMANDS[command];
+  const blocked = commandBlocked(stele, command);
+  if (blocked) { toast.warning(blocked); return false; }
   try {
     await api.post(`/api/steles/${stele.id}/commands`, { command });
-    if (!isLive(stele) && command !== 'screenshot') toast.warning(`${c.label}: Die Stele ist gerade nicht erreichbar. Der Befehl wird ausgeführt, sobald sie sich wieder meldet.`);
+    if (!isLive(stele) && command !== 'screenshot') toast.warning(`${c.label}: Die Stele ist gerade offline. Der Befehl wird beim nächsten Kontakt ausgeführt – meldet sie sich nicht innerhalb von ${COMMAND_TTL_MIN} Min., verfällt er.`);
     else toast.success(c.done);
     return true;
   } catch (err) {
@@ -87,7 +108,8 @@ export function commandButtons(stele, { size = 'sm', commands = ['reload', 'iden
   if (!can('steles.control')) return [];
   return commands.map((cmd) => {
     const c = COMMANDS[cmd];
-    const b = button({ label: c.label, icon: c.icon, size, variant });
+    const blocked = commandBlocked(stele, cmd);
+    const b = button({ label: c.label, icon: c.icon, size, variant, disabled: !!blocked, title: blocked });
     b.addEventListener('click', async () => {
       b.setAttribute('aria-busy', 'true');
       await sendCommand(stele, cmd);
@@ -142,6 +164,7 @@ export function steleCard(stele, { live = true, showMeta = false } = {}) {
   const subtitle = h('p', { class: 'stele-card__sub' });
   const nowSlot = h('div');
   const facts = h('dl', { class: 'stele-card__facts' });
+  const hintSlot = h('div');
   const actions = h('div', { class: 'stele-card__actions' });
   const preview = live && can('steles.view') ? livePreview(stele.id) : null;
   const el = h('article', { class: 'card stele-card' },
@@ -149,7 +172,7 @@ export function steleCard(stele, { live = true, showMeta = false } = {}) {
       h('div', { class: 'stele-card__icon', 'aria-hidden': 'true' }, icon('stele')),
       h('div', { class: 'stele-card__titles' }, h('h3', { class: 'stele-card__h' }, titleLink), subtitle),
       statusSlot),
-    h('div', { class: 'stele-card__body' }, nowSlot, facts),
+    h('div', { class: 'stele-card__body' }, nowSlot, facts, hintSlot),
     preview ? preview.el : null,
     actions,
   );
@@ -173,6 +196,9 @@ export function steleCard(stele, { live = true, showMeta = false } = {}) {
     rows.push(fact('Zuletzt gemeldet', s.last_seen_at ? h('time', { datetime: s.last_seen_at, title: formatDateTime(s.last_seen_at) }, formatRelative(s.last_seen_at)) : 'noch nie'));
     fill(facts, ...rows.flat());
     preview?.showItem(s.status === 'online' ? s.now?.item?.id : null);
+    const hint = commandHint(s);
+    fill(hintSlot, hint);
+    hintSlot.hidden = !hint;
     fill(actions, 
       ...commandButtons(s),
       h('a', { class: 'btn btn--ghost btn--sm stele-card__more', href: `#/steles/${s.id}` }, 'Details', icon('chevron-right', { size: 16 })),
