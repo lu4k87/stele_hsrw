@@ -5,8 +5,9 @@
 //   sendCommand(stele, 'reload')            → Befehl senden mit Rückmeldung
 //   commandBlocked(stele, cmd)              → Grund, warum der Befehl nicht geht (Stele nie gemeldet), sonst null
 //   commandHint(stele)                      → sichtbarer Hinweis dazu oder null
-//   livePreview(steleId)                    → aufklappbare Live-Ansicht (Player im Modus mirror), .destroy()
+//   steleMirror(steleId)                    → aufklappbare Live-Ansicht (Player im Modus mirror), .destroy()
 //   copyField({ label, value })             → Nur-Lese-Feld mit „Kopieren“
+//   defaultPresentationPicker({ steleId, current, presentations, onSaved }) → Auswahl + „Übernehmen“
 //   kioskCommand(url), agentCommand(url)    → Aufrufe für den Stelen-PC
 import { h, useStyles, copyText, uid, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
@@ -15,6 +16,7 @@ import { can } from '../session.js';
 import { formatRelative, formatSince, formatTime, formatDateTime, formatDuration } from '../format.js';
 import { steleStatus, chip } from './status.js';
 import { button } from './page.js';
+import { select } from './form.js';
 import { toast } from './toast.js';
 import { playerFrame, playerUrls } from './player-frame.js';
 
@@ -118,7 +120,7 @@ export function commandButtons(stele, { size = 'sm', commands = ['reload', 'iden
 }
 
 /** Aufklappbare kleine Live-Ansicht. Player wird erst beim Öffnen geladen und beim Schließen entfernt. */
-export function livePreview(steleId, { label = 'Live-Ansicht', maxHeight = '420px' } = {}) {
+export function steleMirror(steleId, { label = 'Live-Ansicht', maxHeight = '420px' } = {}) {
   let frame = null;
   let item = null;
   const regionId = uid('live');
@@ -164,7 +166,7 @@ export function steleCard(stele, { live = true, showMeta = false } = {}) {
   const facts = h('dl', { class: 'stele-card__facts' });
   const hintSlot = h('div');
   const actions = h('div', { class: 'stele-card__actions' });
-  const preview = live && can('steles.view') ? livePreview(stele.id) : null;
+  const preview = live && can('steles.view') ? steleMirror(stele.id) : null;
   const el = h('article', { class: 'card stele-card' },
     h('div', { class: 'stele-card__head' },
       h('div', { class: 'stele-card__icon', 'aria-hidden': 'true' }, icon('stele')),
@@ -306,6 +308,28 @@ export function presentationOptions(list = [], { none = 'Keine (Standbild)', cur
   if (pub.length) opts.push({ group: 'Veröffentlicht', options: pub.map((p) => ({ value: p.id, label: p.status === 'changed' ? `${p.name} (Änderungen offen)` : p.name })) });
   if (draft.length) opts.push({ group: 'Noch nicht veröffentlicht', options: draft.map((p) => ({ value: p.id, label: `${p.name} (Entwurf)` })) });
   return opts;
+}
+
+/**
+ * Standard-Präsentation einer Stele wählen: Auswahl + „Übernehmen“ (nur bei Änderung sichtbar). Layout setzt die Ansicht.
+ * onSaved(stele) nach dem Speichern (Antwort des Servers); onDirty(bool) bei jeder Auswahl.
+ */
+export function defaultPresentationPicker({ steleId, current, presentations, successMessage = 'Standard-Präsentation geändert.', onSaved, onDirty = null, ...attrs }) {
+  const sel = select({ value: current?.id ?? '', options: presentationOptions(presentations, { current }), ...attrs, onChange: () => {
+    const dirty = String(sel.value) !== String(current?.id ?? '');
+    saveBtn.hidden = !dirty;
+    onDirty?.(dirty);
+  } });
+  const saveBtn = button({ label: 'Übernehmen', icon: 'save', size: 'sm', variant: 'primary', onClick: async () => {
+    saveBtn.setAttribute('aria-busy', 'true');
+    try {
+      const res = await api.patch(`/api/steles/${steleId}`, { default_presentation_id: sel.value ? Number(sel.value) : null });
+      toast.success(successMessage);
+      await onSaved(res);
+    } catch (err) { toast.error(errorMessage(err)); } finally { saveBtn.removeAttribute('aria-busy'); }
+  } });
+  saveBtn.hidden = true;
+  return { select: sel, saveBtn };
 }
 
 export function presentationStatusText(status) { return PRES_STATUS_TEXT[status] || ''; }

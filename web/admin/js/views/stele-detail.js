@@ -6,7 +6,7 @@ import { can, canAny } from '../session.js';
 import { icon } from '../icons.js';
 import { formatRelative, formatDateTime, formatDuration, formatTime } from '../format.js';
 import { page, pageHeader, card, button } from '../ui/page.js';
-import { field, input, select, switchToggle, setFieldErrors, clearFieldErrors } from '../ui/form.js';
+import { field, input, switchToggle, setFieldErrors, clearFieldErrors } from '../ui/form.js';
 import { tabs } from '../ui/tabs.js';
 import { menuButton } from '../ui/menu.js';
 import { confirmDialog } from '../ui/dialog.js';
@@ -18,7 +18,7 @@ import { playerFrame, playerUrls } from '../ui/player-frame.js';
 import { meter } from '../ui/charts.js';
 import {
   COMMANDS, sendCommand, commandBlocked, commandHint, nowPlaying, nextChangeText, eventLevelChip, copyField, kioskCommand, agentCommand,
-  fetchPresentations, presentationOptions, playerSummary,
+  fetchPresentations, defaultPresentationPicker, playerSummary,
 } from '../ui/stele-ui.js';
 import { resolutionField, validateIp, openPairDialog } from '../ui/stele-wizard.js';
 
@@ -139,23 +139,22 @@ export default async function mount(root, ctx) {
     if (!presentations) {
       try { presentations = await fetchPresentations({ signal: ctx.signal }); } catch (err) { if (err.name === 'AbortError') return; presentations = []; }
     }
-    const sel = select({ value: cur?.id ?? '', options: presentationOptions(presentations, { current: cur }), onChange: () => { defaultDirty = String(sel.value) !== String(cur?.id ?? ''); saveBtn.hidden = !defaultDirty; } });
-    const saveBtn = button({ label: 'Übernehmen', icon: 'save', size: 'sm', variant: 'primary', onClick: async () => {
-      saveBtn.setAttribute('aria-busy', 'true');
-      try {
-        stele = await api.patch(`/api/steles/${id}`, { default_presentation_id: sel.value ? Number(sel.value) : null });
+    const picker = defaultPresentationPicker({
+      steleId: id, current: cur, presentations,
+      successMessage: 'Standard-Präsentation geändert. Die Stele übernimmt sie innerhalb von 15 Sekunden.',
+      onDirty: (dirty) => { defaultDirty = dirty; },
+      onSaved: (res) => {
+        stele = res;
         defaultDirty = false;
-        toast.success('Standard-Präsentation geändert. Die Stele übernimmt sie innerhalb von 15 Sekunden.');
         renderAll();
         renderDefault(true);
-      } catch (err) { toast.error(errorMessage(err)); } finally { saveBtn.removeAttribute('aria-busy'); }
-    } });
-    saveBtn.hidden = true;
+      },
+    });
     const p = presentations.find((x) => x.id === cur?.id);
     fill(defaultSlot, h('div', { class: 'stack stack--sm' },
-      field({ label: 'Standard-Präsentation', control: sel, hint: 'Läuft, wenn im Zeitplan nichts anderes eingetragen ist.' }),
+      field({ label: 'Standard-Präsentation', control: picker.select, hint: 'Läuft, wenn im Zeitplan nichts anderes eingetragen ist.' }),
       p && p.status === 'draft' ? h('p', { class: 'sd-warn' }, icon('alert-triangle', { size: 16 }), 'Noch nicht veröffentlicht – läuft erst nach dem Veröffentlichen.') : null,
-      h('div', { class: 'cluster' }, saveBtn, can('schedule.view') ? h('a', { class: 'btn btn--ghost btn--sm', href: `#/schedule?stele=${id}` }, icon('calendar-clock', { size: 16 }), 'Zeitplan') : null)));
+      h('div', { class: 'cluster' }, picker.saveBtn, can('schedule.view') ? h('a', { class: 'btn btn--ghost btn--sm', href: `#/schedule?stele=${id}` }, icon('calendar-clock', { size: 16 }), 'Zeitplan') : null)));
   }
 
   // Abweichende Auflösung/Ausrichtung als Warn-Chip (Folien würden verzerrt oder beschnitten), sonst nur der Wert

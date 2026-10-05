@@ -6,19 +6,18 @@ import { api, ApiError, errorMessage } from '../api.js';
 import { can } from '../session.js';
 import { plural } from '../format.js';
 import { page, pageHeader, card, button } from '../ui/page.js';
-import { field, input, numberInput, segmented, switchToggle, setFieldErrors, clearFieldErrors } from '../ui/form.js';
+import { field, input, numberInput, segmented, switchToggle, setFieldErrors } from '../ui/form.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { menuButton } from '../ui/menu.js';
 import { toast } from '../ui/toast.js';
-import { presentationStatus } from '../ui/status.js';
 import { errorState, loadingBlock } from '../ui/empty.js';
-import { contentStyles, clone, sameJson, showInUse } from '../ui/content-common.js';
+import { contentStyles, clone, showInUse } from '../ui/content-common.js';
 import { contentRefField } from '../ui/content-ref.js';
 import { colorChoice, contrastWarning } from '../ui/color-choice.js';
 import { gripButton, makeSortable, moveItem } from '../ui/sortable.js';
 import { livePreview } from '../ui/live-preview.js';
 import { affectedPresentations } from '../ui/presentation-actions.js';
-import { isEditConflict, editConflictAlert } from '../ui/edit-conflict.js';
+import { editorSave } from '../ui/editor-save.js';
 import { usedBy } from './touch-menus.js';
 
 const SAMPLE = {
@@ -54,16 +53,52 @@ export default async function mount(root, ctx) {
   let name = design.name;
   let cfg = clone(design.config);
   cfg.footer.ticker_items = [...(cfg.footer.ticker_items || [])];
-  let saved = clone({ name, cfg });
-  let saving = false;
-  const isDirty = () => !sameJson({ name, cfg }, saved);
   const hd = () => cfg.header;
   const ft = () => cfg.footer;
+  const formRoot = h('div', { class: 'de-form' });
+
+  // ---------- Speichern ----------
+  // Hauptaktion nur bei Änderungen hervorgehoben (changed() schaltet primary/secondary)
+  const ed = editorSave({
+    ctx, ro, formRoot, stateClass: 'tm-savestate', dirtyMessage: 'Das Design hat ungespeicherte Änderungen.',
+    snapshot: () => ({ name, cfg }),
+    validate: () => {
+      if (!name.trim()) { setFieldErrors(formRoot, { name: 'Bitte einen Namen eingeben.' }); return false; }
+      const url = ft().ticker_rss_url.trim();
+      if (url && !/^https?:\/\/.+/i.test(url)) { toast.error('Die RSS-Adresse muss mit http:// oder https:// beginnen.'); return false; }
+      return true;
+    },
+    send: () => {
+      const payload = clone(cfg);
+      payload.footer.ticker_items = payload.footer.ticker_items.map((s) => s.trim()).filter(Boolean);
+      payload.footer.ticker_rss_url = ft().ticker_rss_url.trim();
+      return api.patch(`/api/designs/${id}`, { name: name.trim(), config: payload, expected_updated_at: design.updated_at });
+    },
+    onSaved: (res, untouched) => {
+      design = res;
+      const srvCfg = clone(res.config);
+      srvCfg.footer.ticker_items = [...(srvCfg.footer.ticker_items || [])];
+      ed.markSaved({ name: res.name, cfg: srvCfg });
+      if (untouched) {
+        name = res.name;
+        cfg = srvCfg;
+        renderTicker();
+      }
+      header.titleEl.textContent = res.name;
+      ctx.setTitle(res.name);
+      fill(usedBox, usedBy(res.used_by || []));
+      ed.changed(false);
+      showAffected(res.used_by || []);
+      toast.success('Design gespeichert.');
+    },
+    fieldMap: null,
+    fieldToast: (rest, err) => `${err.message} ${Object.values(rest)[0]}`,
+    onChanged: (preview) => { updateContrast(); if (preview) refreshPreview(); },
+    onReload: reload,
+  });
+  const changed = ed.changed;
 
   // ---------- Kopf ----------
-  // Hauptaktion nur bei Änderungen hervorgehoben (changed() schaltet primary/secondary)
-  const saveBtn = button({ label: 'Speichern', icon: 'save', variant: 'secondary', onClick: () => doSave() });
-  const saveState = h('span', { class: 'tm-savestate', role: 'status', 'aria-live': 'polite' });
   const usedBox = h('div', {}, usedBy(design.used_by || []));
   const header = pageHeader({
     title: design.name,
@@ -71,21 +106,19 @@ export default async function mount(root, ctx) {
     description: 'Rahmen um die Folien. Änderungen gelten für alle Präsentationen mit diesem Design – nach dem Veröffentlichen.',
     meta: usedBox,
     actions: canEdit ? [
-      saveState,
+      ed.saveState,
       menuButton({ items: [
         { label: 'Duplizieren', icon: 'copy', onClick: duplicate },
         { separator: true },
         { label: 'Design löschen', icon: 'trash', danger: true, onClick: remove },
       ] }),
-      saveBtn,
+      ed.saveBtn,
     ] : [],
   });
   const afterSave = h('div', { role: 'status', 'aria-live': 'polite', hidden: true });
-  const conflictBox = h('div', { hidden: true });
   const roAlert = ro ? h('div', { class: 'alert alert--neutral' }, icon('eye'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Nur Ansicht – zum Bearbeiten fehlt das Recht „Designs bearbeiten“.'))) : null;
 
-  const formRoot = h('div', { class: 'de-form' });
   const contrast = contrastWarning();
 
   // Helfer
@@ -226,62 +259,6 @@ export default async function mount(root, ctx) {
     contrast.update(pairs);
   }
 
-  function changed(preview = true) {
-    const dirty = isDirty();
-    ctx.setDirty(dirty ? 'Das Design hat ungespeicherte Änderungen.' : false);
-    saveState.textContent = dirty ? 'Ungespeicherte Änderungen' : 'Gespeichert';
-    saveState.classList.toggle('is-dirty', dirty);
-    saveBtn.classList.toggle('btn--primary', dirty);
-    saveBtn.classList.toggle('btn--secondary', !dirty);
-    updateContrast();
-    if (preview) refreshPreview();
-  }
-
-  // ---------- Speichern ----------
-  async function doSave() {
-    if (saving || ro) return;
-    clearFieldErrors(formRoot);
-    if (!name.trim()) { setFieldErrors(formRoot, { name: 'Bitte einen Namen eingeben.' }); return; }
-    const url = ft().ticker_rss_url.trim();
-    if (url && !/^https?:\/\/.+/i.test(url)) { toast.error('Die RSS-Adresse muss mit http:// oder https:// beginnen.'); return; }
-    const payload = clone(cfg);
-    payload.footer.ticker_items = payload.footer.ticker_items.map((s) => s.trim()).filter(Boolean);
-    payload.footer.ticker_rss_url = url;
-    saving = true;
-    saveBtn.setAttribute('aria-busy', 'true');
-    // Stand beim Absenden: Server-Antwort nur übernehmen, wenn währenddessen nichts geändert wurde
-    const sent = clone({ name, cfg });
-    try {
-      const res = await api.patch(`/api/designs/${id}`, { name: name.trim(), config: payload, expected_updated_at: design.updated_at });
-      design = res;
-      const srvCfg = clone(res.config);
-      srvCfg.footer.ticker_items = [...(srvCfg.footer.ticker_items || [])];
-      saved = clone({ name: res.name, cfg: srvCfg });
-      if (sameJson({ name, cfg }, sent)) {
-        name = res.name;
-        cfg = srvCfg;
-        renderTicker();
-      }
-      header.titleEl.textContent = res.name;
-      ctx.setTitle(res.name);
-      fill(usedBox, usedBy(res.used_by || []));
-      changed(false);
-      showAffected(res.used_by || []);
-      toast.success('Design gespeichert.');
-    } catch (err) {
-      if (isEditConflict(err)) {
-        fill(conflictBox, editConflictAlert(err, { onReload: reload }));
-        conflictBox.hidden = false;
-      } else if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
-        const first = Object.entries(err.fields)[0];
-        toast.error(`${err.message} ${first[1]}`);
-      } else toast.error(errorMessage(err));
-    } finally {
-      saving = false;
-      saveBtn.removeAttribute('aria-busy');
-    }
-  }
-
   function showAffected(list) {
     const box = affectedPresentations(list, { what: 'das neue Design', onPublished: () => ctx.refreshNav() });
     fill(afterSave, box);
@@ -296,7 +273,7 @@ export default async function mount(root, ctx) {
   async function duplicate() {
     try {
       const copy = await api.post('/api/designs', { name: `${design.name} (Kopie)`.slice(0, 80), copy_from: id });
-      toast.success(`Kopie „${copy.name}“ angelegt${isDirty() ? ' (vom gespeicherten Stand)' : ''}.`);
+      toast.success(`Kopie „${copy.name}“ angelegt${ed.isDirty() ? ' (vom gespeicherten Stand)' : ''}.`);
       ctx.navigate(`/designs/${copy.id}`);
     } catch (err) { toast.error(errorMessage(err)); }
   }
@@ -341,17 +318,15 @@ export default async function mount(root, ctx) {
   if (ro) for (const el of formRoot.querySelectorAll('.cu-color input, .cu-color button')) el.disabled = true;
 
   fill(root, page({ wide: true, className: 'de-page' },
-    header, roAlert, conflictBox, afterSave,
+    header, roAlert, ed.conflictBox, afterSave,
     h('div', { class: 'de-layout' },
       h('div', { class: 'stack' }, contrast, formRoot),
       h('aside', { class: 'de-side' }, card({ title: 'Vorschau', icon: 'eye', body: h('div', { class: 'stack' }, pv.el, h('p', { class: 'text-2 text-sm' }, 'Mit einer Beispielfolie. Uhr und Laufband laufen wie auf der Stele.')) })))));
   changed(false);
   refreshPreview(true);
 
-  const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); doSave(); } };
-  document.addEventListener('keydown', onKey);
   return () => {
-    document.removeEventListener('keydown', onKey);
+    ed.destroy();
     pv.destroy();
   };
 }

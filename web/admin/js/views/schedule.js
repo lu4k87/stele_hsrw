@@ -13,7 +13,7 @@ import { dataTable } from '../ui/table.js';
 import { toast } from '../ui/toast.js';
 import { chip, presentationStatus } from '../ui/status.js';
 import { emptyState, errorState, loadingBlock } from '../ui/empty.js';
-import { fetchPresentations, presentationOptions } from '../ui/stele-ui.js';
+import { fetchPresentations, presentationOptions, defaultPresentationPicker } from '../ui/stele-ui.js';
 
 const PALETTE = 8; // Anzahl Farben in schedule.css (--sch-c0 … --sch-c7)
 
@@ -172,20 +172,11 @@ export default async function mount(root, ctx) {
       fill(defaultSlot, label, h('strong', {}, cur?.name || '–'), status);
       return;
     }
-    const sel = select({ value: cur?.id ?? '', options: presentationOptions(state.presentations, { current: cur }), 'aria-label': 'Standard-Präsentation' });
-    const save = button({ label: 'Übernehmen', icon: 'save', size: 'sm', variant: 'primary' });
-    save.hidden = true;
-    sel.addEventListener('change', () => { save.hidden = String(sel.value) === String(cur?.id ?? ''); });
-    save.addEventListener('click', async () => {
-      save.setAttribute('aria-busy', 'true');
-      try {
-        await api.patch(`/api/steles/${state.steleId}`, { default_presentation_id: sel.value ? Number(sel.value) : null });
-        toast.success('Standard-Präsentation geändert.');
-        await loadAll();
-        ctx.refreshNav();
-      } catch (err) { toast.error(errorMessage(err)); } finally { save.removeAttribute('aria-busy'); }
+    const picker = defaultPresentationPicker({
+      steleId: state.steleId, current: cur, presentations: state.presentations, 'aria-label': 'Standard-Präsentation',
+      onSaved: async () => { await loadAll(); ctx.refreshNav(); },
     });
-    fill(defaultSlot, label, h('div', { class: 'sch-default__sel' }, sel), save, cur && cur.status === 'draft' ? chip('warning', 'Entwurf – läuft erst nach Veröffentlichung', 'alert-triangle', { size: 'sm' }) : null);
+    fill(defaultSlot, label, h('div', { class: 'sch-default__sel' }, picker.select), picker.saveBtn, cur && cur.status === 'draft' ? chip('warning', 'Entwurf – läuft erst nach Veröffentlichung', 'alert-triangle', { size: 'sm' }) : null);
   }
 
   // ---------- Wochenansicht ----------

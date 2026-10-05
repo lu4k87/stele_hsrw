@@ -3,16 +3,17 @@ import { h, useStyles, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
 import { api, ApiError, errorMessage } from '../api.js';
 import { can } from '../session.js';
-import { page, pageHeader, card, button } from '../ui/page.js';
-import { field, input, textarea, select, segmented, tagsInput, setFieldErrors, clearFieldErrors } from '../ui/form.js';
+import { page, pageHeader, card } from '../ui/page.js';
+import { field, input, textarea, select, segmented, tagsInput, setFieldErrors } from '../ui/form.js';
 import { menuButton } from '../ui/menu.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { errorState, loadingBlock } from '../ui/empty.js';
-import { contentStyles, clone, sameJson, usageList, showInUse, TEMPLATE_LABELS } from '../ui/content-common.js';
+import { contentStyles, clone, usageList, showInUse, TEMPLATE_LABELS } from '../ui/content-common.js';
 import { contentRefField } from '../ui/content-ref.js';
 import { colorChoice, contrastWarning, darken } from '../ui/color-choice.js';
 import { livePreview } from '../ui/live-preview.js';
+import { editorSave } from '../ui/editor-save.js';
 
 const DEFAULT_DATA = {
   template: 'title_text',
@@ -92,31 +93,72 @@ export default async function mount(root, ctx) {
   const data = merge(DEFAULT_DATA, content?.data || {});
   let title = content?.title || '';
   let tags = [...(content?.tags || [])];
-  let saved = snapshot();
-  let saving = false;
   let designId = designs.some((d) => d.id === defaultDesignId) ? defaultDesignId : (designs[0]?.id ?? null);
   const designConfig = () => designs.find((d) => d.id === designId)?.config || null;
 
   function snapshot() { return clone({ data, title, tags }); }
-  function isDirty() { return !sameJson(snapshot(), saved); }
   ctx.setTitle(isNew ? 'Neue Info-Folie' : (content.title || 'Info-Folie'));
 
+  // ---------- Speichern ----------
+  const formRoot = h('div', { class: 'ts-form' });
+  const ed = editorSave({
+    ctx, ro, formRoot, label: isNew ? 'Anlegen' : 'Speichern', emphasize: false, stateClass: 'ts-savestate',
+    dirtyMessage: 'Die Info-Folie hat ungespeicherte Änderungen.', savedLabel: isNew ? '' : 'Gespeichert',
+    snapshot,
+    validate: () => {
+      const f = data.fields;
+      const errs = {};
+      if (!String(f.title || '').trim()) errs['fields.title'] = 'Bitte eine Überschrift eingeben.';
+      if (data.template === 'image_text' && !f.image_content_id) errs['fields.image_content_id'] = 'Bitte ein Bild auswählen.';
+      if (f.qr_url && !/^https?:\/\/\S+$/i.test(f.qr_url)) errs['fields.qr_url'] = 'Bitte eine Adresse eingeben, die mit http:// oder https:// beginnt.';
+      if (!Object.keys(errs).length) return true;
+      setFieldErrors(formRoot, errs);
+      toast.error('Bitte die markierten Felder prüfen.');
+      return false;
+    },
+    send: () => {
+      const payload = { title: (title.trim() || String(data.fields.title).trim().split('\n')[0]).slice(0, 120), tags, data: clone(data) };
+      return isNew ? api.post('/api/contents', { type: 'text', ...payload }) : api.patch(`/api/contents/${content.id}`, payload);
+    },
+    onSaved: (res) => {
+      ctx.setDirty(false);
+      if (isNew) {
+        toast.success(`Info-Folie „${res.title}“ angelegt.`);
+        ctx.navigate(`/media/text/${res.id}`, { replace: true });
+        return;
+      }
+      content = { ...content, ...res };
+      title = res.title;
+      titleIn.value = title;
+      ed.markSaved();
+      header.titleEl.textContent = res.title;
+      ctx.setTitle(res.title);
+      ed.changed(false);
+      toast.success(usages.length ? 'Gespeichert. Auf den Stelen sichtbar nach erneutem Veröffentlichen der Präsentation.' : 'Info-Folie gespeichert.');
+    },
+    fieldMap: (k) => k.replace(/^data\./, ''),
+    onChanged: (preview) => {
+      updateContrast();
+      updateReadHint();
+      if (preview) refreshPreview();
+    },
+  });
+  const changed = ed.changed;
+
   // ---------- Kopf ----------
-  const saveBtn = button({ label: isNew ? 'Anlegen' : 'Speichern', icon: 'save', variant: 'primary', onClick: () => save() });
-  const saveState = h('span', { class: 'ts-savestate', role: 'status', 'aria-live': 'polite' });
   const headerTitle = isNew ? 'Neue Info-Folie' : (content.title || 'Info-Folie');
   const header = pageHeader({
     title: headerTitle,
     back: { href: '#/media', label: 'Mediathek' },
     description: 'Text-Folie aus einer Vorlage gestalten – die Vorschau rechts zeigt sie wie auf der Stele.',
     actions: canEdit ? [
-      saveState,
+      ed.saveState,
       !isNew ? menuButton({ items: [
         { label: 'Duplizieren', icon: 'copy', onClick: duplicate },
         { separator: true },
         can('content.delete') ? { label: 'Löschen', icon: 'trash', danger: true, onClick: remove } : null,
       ] }) : null,
-      saveBtn,
+      ed.saveBtn,
     ] : [],
   });
 
@@ -282,61 +324,8 @@ export default async function mount(root, ctx) {
         : fitState && fitState.body_px < READABLE_PX ? readAlert('warning', `Schrift auf ${fitState.body_px} px verkleinert`, 'Aus 3–5 m Abstand schwer lesbar. Text kürzen, damit die Schrift groß bleibt.') : null);
   }
 
-  function changed(preview = true) {
-    const dirty = isDirty();
-    ctx.setDirty(dirty ? 'Die Info-Folie hat ungespeicherte Änderungen.' : false);
-    saveState.textContent = dirty ? 'Ungespeicherte Änderungen' : (isNew ? '' : 'Gespeichert');
-    saveState.classList.toggle('is-dirty', dirty);
-    updateContrast();
-    updateReadHint();
-    if (preview) refreshPreview();
-  }
-
-  // ---------- Speichern ----------
-  const formRoot = h('div', { class: 'ts-form' });
-  async function save() {
-    if (saving || ro) return;
-    clearFieldErrors(formRoot);
-    const f = data.fields;
-    const errs = {};
-    if (!String(f.title || '').trim()) errs['fields.title'] = 'Bitte eine Überschrift eingeben.';
-    if (data.template === 'image_text' && !f.image_content_id) errs['fields.image_content_id'] = 'Bitte ein Bild auswählen.';
-    if (f.qr_url && !/^https?:\/\/\S+$/i.test(f.qr_url)) errs['fields.qr_url'] = 'Bitte eine Adresse eingeben, die mit http:// oder https:// beginnt.';
-    if (Object.keys(errs).length) { setFieldErrors(formRoot, errs); toast.error('Bitte die markierten Felder prüfen.'); return; }
-    const payload = { title: (title.trim() || String(f.title).trim().split('\n')[0]).slice(0, 120), tags, data: clone(data) };
-    saving = true;
-    saveBtn.setAttribute('aria-busy', 'true');
-    try {
-      const res = isNew ? await api.post('/api/contents', { type: 'text', ...payload }) : await api.patch(`/api/contents/${content.id}`, payload);
-      ctx.setDirty(false);
-      if (isNew) {
-        toast.success(`Info-Folie „${res.title}“ angelegt.`);
-        ctx.navigate(`/media/text/${res.id}`, { replace: true });
-        return;
-      }
-      content = { ...content, ...res };
-      title = res.title;
-      titleIn.value = title;
-      saved = snapshot();
-      header.titleEl.textContent = res.title;
-      ctx.setTitle(res.title);
-      changed(false);
-      toast.success(usages.length ? 'Gespeichert. Auf den Stelen sichtbar nach erneutem Veröffentlichen der Präsentation.' : 'Info-Folie gespeichert.');
-    } catch (err) {
-      if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
-        const mapped = {};
-        for (const [k, v] of Object.entries(err.fields)) mapped[k.replace(/^data\./, '')] = v;
-        const rest = setFieldErrors(formRoot, mapped);
-        toast.error(Object.values(rest)[0] || err.message);
-      } else toast.error(errorMessage(err));
-    } finally {
-      saving = false;
-      saveBtn.removeAttribute('aria-busy');
-    }
-  }
-
   async function duplicate() {
-    if (isDirty() && !(await confirmDialog({ title: 'Ungespeicherte Änderungen', message: 'Die Kopie wird vom zuletzt gespeicherten Stand erstellt. Trotzdem duplizieren?', confirmLabel: 'Duplizieren', icon: 'copy' }))) return;
+    if (ed.isDirty() && !(await confirmDialog({ title: 'Ungespeicherte Änderungen', message: 'Die Kopie wird vom zuletzt gespeicherten Stand erstellt. Trotzdem duplizieren?', confirmLabel: 'Duplizieren', icon: 'copy' }))) return;
     try {
       const copy = await api.post(`/api/contents/${content.id}/duplicate`);
       ctx.setDirty(false);
@@ -400,15 +389,11 @@ export default async function mount(root, ctx) {
     h('div', { class: 'ts-layout' }, formRoot, h('aside', { class: 'ts-side' }, previewCard)),
   ));
   changed(false);
-  saveState.textContent = isNew ? 'Noch nicht gespeichert' : 'Gespeichert';
+  ed.saveState.textContent = isNew ? 'Noch nicht gespeichert' : 'Gespeichert';
   refreshPreview(true);
 
-  const onKey = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
-  };
-  document.addEventListener('keydown', onKey);
   return () => {
-    document.removeEventListener('keydown', onKey);
+    ed.destroy();
     pv.destroy();
   };
 }

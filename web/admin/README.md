@@ -69,6 +69,12 @@ export default async function mount(root, ctx) {
 
 **ui/edit-conflict.js** – `isEditConflict(err)`, `editConflictAlert(err, { onReload })` (409 `edit_conflict`: Hinweis mit „Neu laden“).
 
+**ui/editor-save.js** – `editorSave({ ctx, ro, formRoot, snapshot, validate, send, onSaved(res, untouched), fieldMap, fieldToast, onReload, emphasize, stateClass, dirtyMessage })` → `{ saveBtn, saveState, conflictBox, changed(preview), isDirty, save, markSaved(snap), destroy }`: Speichern per Knopf/Strg+S (Touch-Menü, Design, Info-Folie) mit „Ungespeicherte Änderungen“, Feldfehlern und Bearbeitungskonflikt.
+
+**ui/autosave.js** – `autosave({ ctx, enabled, className, parts: { name: send }, fieldMessage, onConflict, conflictMessage })` → `{ el, paint, queue(part), flush(), conflict, drop(), settle(), destroy() }`: Entwurf automatisch in Teilen speichern (Präsentations-Editor), Wiederholen bei Netzfehlern.
+
+**ui/stele-ui.js** – u. a. `steleCard`, `steleMirror(steleId)` (aufklappbare Live-Ansicht), `presentationOptions(list)`, `defaultPresentationPicker({ steleId, current, presentations, onSaved })` (Standard-Präsentation wählen; Zeitplan, Stele-Detail).
+
 **ui/toast.js** – `toast.success/info/warning/error(msg, { action: { label, onClick } })`.
 
 **ui/player-frame.js** – `playerFrame({ src, width, height, label, maxHeight })` → `{ el, send(msg), on(type, fn), ready, reload, destroy }`; `playerUrls.preview(id, { source, slide, autoplay, touch })`, `playerUrls.slide()`, `playerUrls.mirror(steleId)`. Nachrichten nach SPEC §9.2 (`render`, `goto`, `play`, `pause`, `showItem` …). `destroy()` im Cleanup aufrufen.

@@ -12,7 +12,7 @@ import { menuButton } from '../ui/menu.js';
 import { toast } from '../ui/toast.js';
 import { contentTypeLabel } from '../ui/status.js';
 import { errorState, loadingBlock } from '../ui/empty.js';
-import { contentStyles, contentPreview, clone, sameJson, showInUse, announce } from '../ui/content-common.js';
+import { contentStyles, contentPreview, clone, showInUse, announce } from '../ui/content-common.js';
 import { contentRefField, fetchContent, rememberContent } from '../ui/content-ref.js';
 import { openContentPicker } from '../ui/content-picker.js';
 import { iconPickerButton, iconLabel } from '../ui/icon-picker.js';
@@ -20,7 +20,7 @@ import { colorChoice } from '../ui/color-choice.js';
 import { gripButton, makeSortable, moveItem } from '../ui/sortable.js';
 import { livePreview } from '../ui/live-preview.js';
 import { affectedPresentations } from '../ui/presentation-actions.js';
-import { isEditConflict, editConflictAlert } from '../ui/edit-conflict.js';
+import { editorSave } from '../ui/editor-save.js';
 import { usedBy } from './touch-menus.js';
 
 const MAX_TILES = 12;
@@ -56,39 +56,68 @@ export default async function mount(root, ctx) {
   const briefs = new Map();
   let name = menu.name;
   let cfg = stripConfig(menu.config, briefs);
-  let saved = clone({ name, cfg });
-  let saving = false;
   let designId = designs[0]?.id ?? null;
-  const isDirty = () => !sameJson({ name, cfg }, saved);
+  const formRoot = h('div', { class: 'tm-form' });
+
+  // ---------- Speichern ----------
+  // Hauptaktion nur bei Änderungen hervorgehoben (changed() schaltet primary/secondary)
+  const ed = editorSave({
+    ctx, ro, formRoot, stateClass: 'tm-savestate', dirtyMessage: 'Das Touch-Menü hat ungespeicherte Änderungen.',
+    snapshot: () => ({ name, cfg }),
+    validate: () => {
+      if (name.trim()) return true;
+      setFieldErrors(formRoot, { name: 'Bitte einen Namen eingeben.' });
+      return false;
+    },
+    send: () => api.patch(`/api/touch-menus/${id}`, { name: name.trim(), config: clone(cfg), expected_updated_at: menu.updated_at }),
+    onSaved: (res, untouched) => {
+      menu = res;
+      const srvCfg = stripConfig(res.config, briefs);
+      ed.markSaved({ name: res.name, cfg: srvCfg });
+      if (untouched) {
+        name = res.name;
+        cfg = srvCfg;
+        renderTiles();
+      }
+      header.titleEl.textContent = res.name;
+      ctx.setTitle(res.name);
+      ed.changed(untouched);
+      showAffected(res.used_by || []);
+      toast.success('Touch-Menü gespeichert.');
+    },
+    fieldMap: (k) => k.replace(/^config\./, ''),
+    fieldToast: (rest, err) => {
+      const first = Object.entries(rest)[0];
+      return first ? `${describeTilePath(first[0], cfg.tiles)}${first[1]}` : err.message;
+    },
+    onChanged: (preview) => { if (preview) refreshPreview(); },
+    onReload: reload,
+  });
+  const changed = ed.changed;
 
   // ---------- Kopf ----------
-  // Hauptaktion nur bei Änderungen hervorgehoben (changed() schaltet primary/secondary)
-  const saveBtn = button({ label: 'Speichern', icon: 'save', variant: 'secondary', onClick: () => doSave() });
-  const saveState = h('span', { class: 'tm-savestate', role: 'status', 'aria-live': 'polite' });
   const header = pageHeader({
     title: menu.name,
     back: { href: '#/touch-menus', label: 'Touch-Menüs' },
     description: 'Kacheln für Besucher. Die Vorschau rechts zeigt das Menü wie auf der Stele.',
     meta: usedBy(menu.used_by || []),
     actions: canEdit ? [
-      saveState,
+      ed.saveState,
       menuButton({ items: [
         { label: 'Duplizieren', icon: 'copy', onClick: duplicate },
         { separator: true },
         { label: 'Touch-Menü löschen', icon: 'trash', danger: true, onClick: remove },
       ] }),
-      saveBtn,
+      ed.saveBtn,
     ] : [],
   });
   const usedHint = (menu.used_by || []).length ? h('div', { class: 'alert' }, icon('info'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Änderungen erscheinen auf den Stelen erst, nachdem die betroffenen Präsentationen erneut veröffentlicht wurden.'))) : null;
-  const conflictBox = h('div', { hidden: true });
   const afterSave = h('div', { role: 'status', 'aria-live': 'polite', hidden: true });
   const roAlert = ro ? h('div', { class: 'alert alert--neutral' }, icon('eye'), h('div', { class: 'alert__body' },
     h('div', { class: 'alert__text' }, 'Nur Ansicht – zum Bearbeiten fehlt das Recht „Touch-Menüs bearbeiten“.'))) : null;
 
   // ---------- Einstellungen ----------
-  const formRoot = h('div', { class: 'tm-form' });
   const nameIn = input({ value: name, maxLength: 80, disabled: ro, onInput: (v) => { name = v; changed(false); } });
   const titleIn = input({ value: cfg.title, maxLength: 80, disabled: ro, onInput: (v) => { cfg.title = v; changed(); } });
   const introIn = input({ value: cfg.intro, maxLength: 160, disabled: ro, onInput: (v) => { cfg.intro = v; changed(); } });
@@ -294,58 +323,6 @@ export default async function mount(root, ctx) {
     if (now) pv.now(body, pick); else pv.update(body, pick);
   }
 
-  // ---------- Speichern ----------
-  function changed(preview = true) {
-    const dirty = isDirty();
-    ctx.setDirty(dirty ? 'Das Touch-Menü hat ungespeicherte Änderungen.' : false);
-    saveState.textContent = dirty ? 'Ungespeicherte Änderungen' : 'Gespeichert';
-    saveState.classList.toggle('is-dirty', dirty);
-    saveBtn.classList.toggle('btn--primary', dirty);
-    saveBtn.classList.toggle('btn--secondary', !dirty);
-    if (preview) refreshPreview();
-  }
-
-  async function doSave() {
-    if (saving || ro) return;
-    clearFieldErrors(formRoot);
-    if (!name.trim()) { setFieldErrors(formRoot, { name: 'Bitte einen Namen eingeben.' }); return; }
-    saving = true;
-    saveBtn.setAttribute('aria-busy', 'true');
-    // Stand beim Absenden: Server-Antwort nur übernehmen, wenn währenddessen nichts geändert wurde
-    const sent = clone({ name, cfg });
-    try {
-      const res = await api.patch(`/api/touch-menus/${id}`, { name: name.trim(), config: clone(cfg), expected_updated_at: menu.updated_at });
-      menu = res;
-      const srvCfg = stripConfig(res.config, briefs);
-      saved = clone({ name: res.name, cfg: srvCfg });
-      const untouched = sameJson({ name, cfg }, sent);
-      if (untouched) {
-        name = res.name;
-        cfg = srvCfg;
-        renderTiles();
-      }
-      header.titleEl.textContent = res.name;
-      ctx.setTitle(res.name);
-      changed(untouched);
-      showAffected(res.used_by || []);
-      toast.success('Touch-Menü gespeichert.');
-    } catch (err) {
-      if (isEditConflict(err)) {
-        fill(conflictBox, editConflictAlert(err, { onReload: reload }));
-        conflictBox.hidden = false;
-      } else if (err instanceof ApiError && err.fields && Object.keys(err.fields).length) {
-        const mapped = {};
-        for (const [k, v] of Object.entries(err.fields)) mapped[k.replace(/^config\./, '')] = v;
-        const rest = setFieldErrors(formRoot, mapped);
-        const first = Object.entries(rest)[0];
-        toast.error(first ? `${describeTilePath(first[0], cfg.tiles)}${first[1]}` : err.message);
-      } else toast.error(errorMessage(err));
-    } finally {
-      saving = false;
-      saveBtn.removeAttribute('aria-busy');
-    }
-  }
-
   function showAffected(list) {
     const box = affectedPresentations(list, { what: 'das geänderte Touch-Menü', onPublished: () => ctx.refreshNav() });
     fill(afterSave, box);
@@ -360,7 +337,7 @@ export default async function mount(root, ctx) {
   async function duplicate() {
     try {
       const copy = await api.post('/api/touch-menus', { name: `${menu.name} (Kopie)`.slice(0, 80), copy_from: id });
-      toast.success(`Kopie „${copy.name}“ angelegt${isDirty() ? ' (vom gespeicherten Stand)' : ''}.`);
+      toast.success(`Kopie „${copy.name}“ angelegt${ed.isDirty() ? ' (vom gespeicherten Stand)' : ''}.`);
       ctx.navigate(`/touch-menus/${copy.id}`);
     } catch (err) { toast.error(errorMessage(err)); }
   }
@@ -412,7 +389,7 @@ export default async function mount(root, ctx) {
   );
 
   fill(root, page({ wide: true, className: 'tm-page' },
-    header, roAlert, conflictBox, usedHint, afterSave,
+    header, roAlert, ed.conflictBox, usedHint, afterSave,
     h('div', { class: 'tm-layout' },
       formRoot,
       h('aside', { class: 'tm-side' }, card({
@@ -425,10 +402,8 @@ export default async function mount(root, ctx) {
   changed(false);
   refreshPreview(true);
 
-  const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); doSave(); } };
-  document.addEventListener('keydown', onKey);
   return () => {
-    document.removeEventListener('keydown', onKey);
+    ed.destroy();
     pv.destroy();
   };
 }
