@@ -15,6 +15,7 @@ import { page, pageHeader, card } from './ui/page.js';
 import { getThemePref, setThemePref, THEME_OPTIONS } from './theme.js';
 import { openPasswordDialog } from './account.js';
 import { formatRelative, formatTime } from './format.js';
+import { steleState } from './ui/status.js';
 import { zoomControl, themeToggle, zoomMenuItems } from './ui/display-controls.js';
 import { formatZoom } from './zoom.js';
 
@@ -102,7 +103,7 @@ export function createShell() {
   const envBadge = h('button', { type: 'button', class: 'env-badge', title: 'Was bedeutet Testbetrieb?' },
     icon('info', { size: 16 }), h('span', { class: 'env-badge__text' }, 'Testbetrieb · lokal'));
   const stelePill = h('a', { class: 'stele-pill', href: '#/steles', hidden: true });
-  const connPill = h('span', { class: 'stele-pill stele-pill--offline', role: 'status', hidden: true });
+  const connPill = h('span', { class: 'conn-pill', role: 'status', hidden: true });
   const userBtn = h('button', { type: 'button', class: 'user-button', 'aria-haspopup': 'menu', 'aria-expanded': 'false' });
   const zoomCtl = zoomControl();
   const themeBtn = themeToggle();
@@ -204,21 +205,24 @@ export function createShell() {
     if (!Array.isArray(steles) || !steles.length) { stelePill.hidden = true; return; }
     stelePill.hidden = false;
     stelePill.href = can('monitoring.view') ? '#/monitoring' : '#/steles';
-    const offline = steles.filter((s) => s.status === 'offline' || s.status === 'never');
+    // Zustände aus STELE_STATUS (ui/status.js): gleiche Wörter wie Chip, Karte und Navi-Badge
+    const offline = steles.filter((s) => steleState(s).alert);
+    const unpaired = steles.filter((s) => s.status === 'never');
     let cls = 'online';
     let name;
     let state;
     if (steles.length === 1) {
       const s = steles[0];
+      const st = steleState(s);
       name = s.name;
-      state = { online: 'Online', offline: 'Offline', standby: 'Nachtmodus', never: 'Nicht verbunden' }[s.status] || 'Unbekannt';
-      cls = { online: 'online', offline: 'offline', standby: 'standby', never: 'warning' }[s.status] || 'warning';
-      stelePill.title = s.last_seen_at ? `${s.name}: zuletzt gemeldet ${formatRelative(s.last_seen_at)}` : `${s.name}: noch nie gemeldet`;
+      state = st.label;
+      cls = st.pill;
+      stelePill.title = s.last_seen_at ? `${s.name}: ${st.label}, zuletzt gemeldet ${formatRelative(s.last_seen_at)}` : `${s.name}: ${st.hint}`;
     } else {
       name = `${steles.length} Stelen`;
-      state = offline.length ? `${offline.length} offline` : 'alle online';
-      cls = offline.length ? 'offline' : 'online';
-      stelePill.title = steles.map((s) => `${s.name}: ${s.status}`).join('\n');
+      state = [offline.length ? `${offline.length} offline` : null, unpaired.length ? `${unpaired.length} nicht gekoppelt` : null].filter(Boolean).join(' · ') || 'alle online';
+      cls = offline.length ? 'offline' : unpaired.length ? 'standby' : 'online';
+      stelePill.title = steles.map((s) => `${s.name}: ${steleState(s).label}`).join('\n');
     }
     stelePill.className = `stele-pill stele-pill--${cls}`;
     stelePill.replaceChildren(
@@ -239,7 +243,7 @@ export function createShell() {
     if (!lost) { connPill.replaceChildren(); toast.success('Verbindung zum Server wiederhergestellt.'); return; }
     const since = conn.lastOk ? `Stand ${formatTime(conn.lastOk)}` : 'noch kein Stand';
     connPill.title = 'Der Server antwortet nicht. Angezeigte Daten können veraltet sein; neue Versuche laufen automatisch.';
-    connPill.replaceChildren(icon('wifi-off'), h('span', { class: 'stele-pill__name' }, 'Verbindung unterbrochen'), h('span', { class: 'stele-pill__state' }, since));
+    connPill.replaceChildren(icon('wifi-off'), h('span', { class: 'conn-pill__text' }, 'Verbindung unterbrochen'), h('span', { class: 'conn-pill__since' }, since));
     connPill.setAttribute('aria-label', `Verbindung zum Server unterbrochen – ${since}`);
   }
 
@@ -257,7 +261,7 @@ export function createShell() {
       setConnLost(false);
       lastDashboard = d;
       badgeState.reviews = can('presentations.publish') && Array.isArray(d.reviews) ? d.reviews.length : 0;
-      badgeState.offline = Array.isArray(d.steles) ? d.steles.filter((s) => s.status === 'offline').length : 0;
+      badgeState.offline = Array.isArray(d.steles) ? d.steles.filter((s) => steleState(s).alert).length : 0;
       const alerts = Array.isArray(d.alerts) ? d.alerts : [];
       const errors = alerts.filter((a) => a.level === 'error').length;
       badgeState.alerts = can('monitoring.view') ? (errors || alerts.length) : 0;

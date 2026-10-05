@@ -7,6 +7,10 @@
 .stele-now__label { color: var(--text-2); }
 .stele-now__hint { color: var(--text-2); font-size: var(--fs-sm); }
 
+/* Grund für gesperrte Befehls-Knöpfe (commandHint) */
+.command-hint { display: flex; align-items: flex-start; gap: var(--sp-2); font-size: var(--fs-sm); min-width: 0; }
+.command-hint > .icon { flex: none; margin-top: 2px; }
+
 /* Karte */
 .stele-card { display: flex; flex-direction: column; min-width: 0; }
 .stele-card__head { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5) var(--sp-3); flex-wrap: wrap; }

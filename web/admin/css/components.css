@@ -267,6 +267,9 @@
 .alert__title { font-weight: var(--fw-semibold); }
 .alert__text { color: var(--text-2); }
 .alert__actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; margin-top: var(--sp-2); }
+/* Liste im Hinweis (z. B. betroffene Präsentationen): je Zeile Link + Aktion */
+.alert__list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.alert__list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .alert--success { --alert-fg: var(--success); --alert-bg: var(--success-soft); --alert-border: var(--success-border); }
 .alert--warning { --alert-fg: var(--warning); --alert-bg: var(--warning-soft); --alert-border: var(--warning-border); }
 .alert--danger { --alert-fg: var(--danger); --alert-bg: var(--danger-soft); --alert-border: var(--danger-border); }

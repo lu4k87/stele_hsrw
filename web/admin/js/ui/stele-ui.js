@@ -12,7 +12,7 @@ import { h, useStyles, copyText, uid, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
 import { api, errorMessage } from '../api.js';
 import { can } from '../session.js';
-import { formatRelative, formatTime, formatDateTime, formatDuration } from '../format.js';
+import { formatRelative, formatSince, formatTime, formatDateTime, formatDuration } from '../format.js';
 import { steleStatus, chip } from './status.js';
 import { button } from './page.js';
 import { toast } from './toast.js';
@@ -83,9 +83,7 @@ export function commandBlocked(stele, command = 'reload') {
 /** Sichtbarer Grund für gesperrte Befehls-Knöpfe (nur mit steles.control) oder null. */
 export function commandHint(stele) {
   if (!can('steles.control') || !commandBlocked(stele)) return null;
-  const ic = icon('info', { size: 16 });
-  ic.style.flex = 'none';
-  return h('p', { class: 'cluster text-sm', style: { flexWrap: 'nowrap', alignItems: 'flex-start' } }, ic, h('span', {}, NEVER_REASON));
+  return h('p', { class: 'command-hint' }, icon('info', { size: 16 }), h('span', {}, NEVER_REASON));
 }
 
 export async function sendCommand(stele, command) {
@@ -276,7 +274,7 @@ export function alertList(alerts = [], { limit = null } = {}) {
       h('div', { class: 'stele-alert__body' },
         h('span', { class: 'stele-alert__level' }, err ? 'Störung: ' : 'Hinweis: '),
         h('span', {}, a.message),
-        a.since ? h('span', { class: 'stele-alert__time' }, ` · seit ${formatRelative(a.since)}`) : null),
+        a.since ? h('span', { class: 'stele-alert__time' }, ` · ${formatSince(a.since)}`) : null),
       link ? h('a', { class: 'btn btn--secondary btn--sm stele-alert__link', href: link.href }, link.label) : null);
   });
   const rest = limit && sorted.length > limit ? sorted.length - limit : 0;

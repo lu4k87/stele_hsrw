@@ -158,6 +158,18 @@ export default async function mount(root, ctx) {
       h('div', { class: 'cluster' }, saveBtn, can('schedule.view') ? h('a', { class: 'btn btn--ghost btn--sm', href: `#/schedule?stele=${id}` }, icon('calendar-clock', { size: 16 }), 'Zeitplan') : null)));
   }
 
+  // Abweichende Auflösung/Ausrichtung als Warn-Chip (Folien würden verzerrt oder beschnitten), sonst nur der Wert
+  function screenInfo(p) {
+    if (!p?.screen) return `${stele.width} × ${stele.height} px (eingestellt)`;
+    const { w, h: ht } = p.screen;
+    const actual = `${w} × ${ht} px`;
+    if (w === stele.width && ht === stele.height) return actual;
+    const turned = (w > ht) !== (stele.width > stele.height);
+    return h('span', { class: 'cluster' }, actual,
+      chip('warning', turned ? 'Ausrichtung weicht ab' : 'Auflösung weicht ab', 'alert-triangle', { size: 'sm', title: `Eingestellt: ${stele.width} × ${stele.height} px – Bildschirm der Stele oder Einstellung anpassen.` }),
+      h('span', { class: 'text-2 text-sm' }, `eingestellt: ${stele.width} × ${stele.height} px`));
+  }
+
   function renderOverviewParts() {
     fill(nowSlot, nowPlaying(stele));
     const nc = nextChangeText(stele);
@@ -173,7 +185,7 @@ export default async function mount(root, ctx) {
       ['IP-Adresse', stele.ip_address ? h('span', { class: 'mono' }, stele.ip_address) : 'nicht angegeben'],
       ['Ping', ping],
       ['Player', playerSummary(p)],
-      ['Bildschirm', p?.screen ? `${p.screen.w} × ${p.screen.h} px${p.screen.w !== stele.width || p.screen.h !== stele.height ? ` (eingestellt: ${stele.width} × ${stele.height})` : ''}` : `${stele.width} × ${stele.height} px (eingestellt)`],
+      ['Bildschirm', screenInfo(p)],
       ['Stand', !p ? '–' : p.manifest_current
         ? chip('success', 'aktuell', 'check-circle', { size: 'sm' })
         : chip('warning', 'veraltet – „Neu laden“ senden', 'alert-triangle', { size: 'sm' })],

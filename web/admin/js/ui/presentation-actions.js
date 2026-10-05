@@ -84,8 +84,8 @@ export function affectedPresentations(list, { what, onPublished = null } = {}) {
     box.replaceChildren(icon('alert-triangle'), h('div', { class: 'alert__body' },
       h('div', { class: 'alert__title' }, `Änderungen offen in ${plural(rest.length, 'Präsentation', 'Präsentationen')}`),
       h('div', { class: 'alert__text' }, canPublish ? `Auf den Stelen erscheint ${what} erst nach dem Veröffentlichen. Jetzt veröffentlichen?` : `Auf den Stelen erscheint ${what} erst, wenn die Präsentationen veröffentlicht werden.`),
-      h('ul', { class: 'stack stack--sm', style: { listStyle: 'none', margin: 'var(--sp-2) 0 0', padding: 0 } }, rest.map((p) => {
-        const row = h('li', { class: 'cluster' }, h('a', { href: `#/presentations/${p.id}` }, p.name));
+      h('ul', { class: 'alert__list' }, rest.map((p) => {
+        const row = h('li', {}, h('a', { href: `#/presentations/${p.id}` }, p.name));
         if (canPublish) {
           row.append(button({ label: 'Veröffentlichen', icon: 'broadcast', variant: 'secondary', size: 'sm', onClick: async (e) => {
             const btn = e.currentTarget;

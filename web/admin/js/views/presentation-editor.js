@@ -287,13 +287,11 @@ export default async function mount(root, ctx) {
       ] }),
     ];
     if (canPublish) {
-      acts.push(isPublished
-        ? button({ label: 'Veröffentlicht', icon: 'check-circle', variant: 'secondary', disabled: true, title: 'Der Entwurf entspricht dem veröffentlichten Stand.' })
-        : button({ label: 'Veröffentlichen', icon: 'broadcast', variant: 'primary', onClick: () => publish() }));
+      // Veröffentlicht → kein gesperrter Knopf, der Status-Chip im Kopf zeigt den Stand
+      if (!isPublished) acts.push(button({ label: 'Veröffentlichen', icon: 'broadcast', variant: 'primary', onClick: () => publish() }));
     } else if (canEdit) {
-      acts.push(pres.review_state === 'requested'
-        ? button({ label: 'Freigabe angefragt', icon: 'send', variant: 'secondary', disabled: true, title: 'Wartet auf eine Person mit Veröffentlichungsrecht.' })
-        : button({ label: 'Zur Freigabe einreichen', icon: 'send', variant: 'primary', disabled: isPublished, title: isPublished ? 'Keine offenen Änderungen.' : null, onClick: requestReview }));
+      // angefragt oder ohne Änderungen → ausblenden; Status-Chip und Freigabe-Hinweis zeigen den Stand
+      if (pres.review_state !== 'requested' && !isPublished) acts.push(button({ label: 'Zur Freigabe einreichen', icon: 'send', variant: 'primary', onClick: requestReview }));
     }
     fill(actionsBox, ...acts);
     renderBanners();

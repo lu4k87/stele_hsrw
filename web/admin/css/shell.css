@@ -148,7 +148,18 @@
 .stele-pill--online .stele-pill__state, .stele-pill--online .dot { color: var(--success); }
 .stele-pill--offline .stele-pill__state, .stele-pill--offline .dot { color: var(--danger); }
 .stele-pill--standby .stele-pill__state, .stele-pill--standby .dot { color: var(--text-2); }
-.stele-pill--warning .stele-pill__state, .stele-pill--warning .dot { color: var(--warning); }
+
+/* Verbindung zum Server unterbrochen: Störung (rot + Icon + Text), kein Link */
+.conn-pill {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  min-height: 34px; padding: 0 12px 0 10px;
+  border-radius: var(--r-full); border: 1px solid var(--danger-border);
+  background: var(--danger-soft); color: var(--text);
+  font-size: var(--fs-sm); font-weight: var(--fw-medium); white-space: nowrap; max-width: 320px;
+}
+.conn-pill .icon { width: 16px; height: 16px; flex: none; color: var(--danger); }
+.conn-pill__text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.conn-pill__since { font-weight: var(--fw-semibold); color: var(--danger); }
 
 .user-button {
   display: inline-flex; align-items: center; gap: var(--sp-2);
@@ -178,7 +189,7 @@
 @media (max-width: 1280px) {
   .user-button__text { display: none; }
   /* Platz für die Brotkrumen: Kopfleisten-Pillen nur noch mit Icon/Status */
-  .env-badge__text, .stele-pill__name { display: none; }
+  .env-badge__text, .stele-pill__name, .conn-pill__text { display: none; }
   .env-badge { padding: 0 8px; }
 }
 @media (max-width: 1023px) {
@@ -211,7 +222,7 @@
   /* Zoom nur noch als Stufenauswahl; Plus/Minus über Tasten oder Menü */
   .zoom-ctl .zoom-ctl__step { display: none; }
   .zoom-ctl .zoom-ctl__value { border-inline: 0; border-radius: var(--r-full); }
-  .stele-pill__name { display: none; }
+  .stele-pill__name, .conn-pill__text { display: none; }
   .env-badge__text { display: none; }
   .env-badge { padding: 0 8px; }
   .user-button > .icon { display: none; }

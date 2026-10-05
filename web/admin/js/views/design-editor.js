@@ -61,7 +61,8 @@ export default async function mount(root, ctx) {
   const ft = () => cfg.footer;
 
   // ---------- Kopf ----------
-  const saveBtn = button({ label: 'Speichern', icon: 'save', variant: 'primary', onClick: () => doSave() });
+  // Hauptaktion nur bei Änderungen hervorgehoben (changed() schaltet primary/secondary)
+  const saveBtn = button({ label: 'Speichern', icon: 'save', variant: 'secondary', onClick: () => doSave() });
   const saveState = h('span', { class: 'tm-savestate', role: 'status', 'aria-live': 'polite' });
   const usedBox = h('div', {}, usedBy(design.used_by || []));
   const header = pageHeader({
@@ -230,6 +231,8 @@ export default async function mount(root, ctx) {
     ctx.setDirty(dirty ? 'Das Design hat ungespeicherte Änderungen.' : false);
     saveState.textContent = dirty ? 'Ungespeicherte Änderungen' : 'Gespeichert';
     saveState.classList.toggle('is-dirty', dirty);
+    saveBtn.classList.toggle('btn--primary', dirty);
+    saveBtn.classList.toggle('btn--secondary', !dirty);
     updateContrast();
     if (preview) refreshPreview();
   }
