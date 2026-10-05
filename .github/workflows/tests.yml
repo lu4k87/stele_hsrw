@@ -18,7 +18,6 @@ jobs:
     timeout-minutes: 20
     env:
       PYTHON: python
-      STELECMS_PORT: "18090"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,6 +45,8 @@ jobs:
       - name: Start mit run.sh
         if: runner.os != 'Windows'
         shell: bash
+        env:
+          STELECMS_PORT: "18090"   # nur hier: Tests erwarten den Standardport
         run: |
           export STELECMS_DATA="$RUNNER_TEMP/stele-data"
           ./run.sh > "$RUNNER_TEMP/stele.log" 2>&1 &
@@ -63,6 +64,8 @@ jobs:
       - name: Start mit run.bat
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          STELECMS_PORT: "18090"   # nur hier: Tests erwarten den Standardport
         run: |
           $env:STELECMS_DATA = "$env:RUNNER_TEMP\stele-data"
           $log = "$env:RUNNER_TEMP\stele.log"
