@@ -18,8 +18,8 @@ export function setThemePref(pref) {
   try {
     if (pref === 'system') localStorage.removeItem(KEY); else localStorage.setItem(KEY, pref);
   } catch { /* Speicher nicht verfügbar – gilt nur für diese Sitzung */ }
-  if (pref === 'light' || pref === 'dark') document.documentElement.setAttribute('data-theme', pref);
-  else document.documentElement.removeAttribute('data-theme');
+  // wirksames Schema, wie theme-init.js (dort auch das Nachziehen bei System-Wechsel)
+  document.documentElement.setAttribute('data-theme', pref === 'light' || pref === 'dark' ? pref : (systemDark.matches ? 'dark' : 'light'));
   notify();
 }
 

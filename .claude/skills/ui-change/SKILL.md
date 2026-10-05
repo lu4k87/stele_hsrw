@@ -12,7 +12,7 @@ description: Vorgehen und Checkliste für Änderungen an Admin-Oberfläche, Vorf
 
 ## Umsetzen
 - Vorhandene Bausteine (`ui/page.js`, `ui/form.js`, `ui/dialog.js`, `ui/status.js` …) und Klassen wiederverwenden, keine Duplikate.
-- Farben, Abstände, Radien, Schriftgrößen nur über Variablen aus `css/tokens.css`; neuer Token → in `tokens.css` für **hell und dunkel** anlegen (`:root` + `@media (prefers-color-scheme: dark)` + `[data-theme="dark"]`). Der Edit-Hook meldet feste Farben.
+- Farben, Abstände, Radien, Schriftgrößen nur über Variablen aus `css/tokens.css`; neuer Token → in `tokens.css` für **hell und dunkel** anlegen (`:root` + `:root[data-theme="dark"]`; `js/theme-init.js` setzt `data-theme` immer, auch bei „Wie System“). Der Edit-Hook meldet feste Farben.
 - Flow-Layouts (Flexbox/Grid mit `gap`), kein `position: absolute` + `calc()`; nichts überlappt.
 - Kein Build, keine CDNs, keine Inline-Skripte (CSP `script-src 'self'`) → Module unter `web/admin/js/`.
 - Texte Deutsch, neutral („Datei hochladen“), Format de-DE; Hinweise/Fehler = Ursache → Folge → Lösung.
