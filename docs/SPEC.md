@@ -86,7 +86,7 @@ CMS_STELE_KIOSK/
 |---|---|
 | **Inhalt** | Eintrag der Mediathek: `image`, `video`, `pdf`, `text` (Info-Folie aus Vorlage), `web` (Webseite) |
 | **Präsentation** | Diashow: geordnete **Folien** (Verweise auf Inhalte mit eigener Dauer/Übergang/Gültigkeit) + **Diashow-Einstellungen** + **Design** + optional **Touch-Menü**. Wird **veröffentlicht**; die Stele spielt nur veröffentlichte Stände. |
-| **Design** | Rahmen um die Folien: Header (Logo, Titel, Uhr/Datum), Footer (Laufband oder Text), Schrift, Akzentfarbe. Wiederverwendbar. |
+| **Design** | Rahmen um die Folien: Header (Logo, Titel, Uhr/Datum), Footer (Laufband oder Text), Schriften für Text und Überschriften, Typografie-Standard der Info-Folien, Akzentfarbe. Wiederverwendbar. |
 | **Touch-Menü** | Was Besucher beim Antippen sehen: Kacheln → Inhalt, Galerie oder Untermenü (max. 2 Ebenen). Rückkehr zur Diashow nach Inaktivität. |
 | **Stele** | Gerät: Name, Standort, IP, Auflösung, Stelen-Schlüssel, Standard-Präsentation, Einstellungen (Lautstärke, Nachtmodus …). |
 | **Zeitplan-Eintrag** | Präsentation X auf Stele Y an Wochentagen/Uhrzeiten/Datumsbereich, Priorität. Ohne passenden Eintrag läuft die Standard-Präsentation. |
@@ -164,6 +164,14 @@ CREATE TABLE designs (
   created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+-- Hochgeladene Schriften (§5.5): Datei unter MEDIA_DIR/<uid>/font.<format>, Schlüssel „custom-<id>“
+CREATE TABLE fonts (
+  id INTEGER PRIMARY KEY, uid TEXT NOT NULL UNIQUE, name TEXT NOT NULL, file_name TEXT NOT NULL,
+  format TEXT NOT NULL CHECK (format IN ('woff2','woff','ttf','otf')),
+  weight INTEGER,                 -- NULL = variable Schrift, sonst 100..900
+  size_bytes INTEGER NOT NULL,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL, created_at TEXT NOT NULL
 );
 CREATE TABLE touch_menus (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, config TEXT NOT NULL,
@@ -288,7 +296,7 @@ CREATE TABLE audit_log (
   user_id INTEGER, username TEXT NOT NULL, user_display TEXT NOT NULL DEFAULT '',
   action TEXT NOT NULL,       -- login, login_failed, logout, create, update, delete, publish, request_review,
                               -- reject, discard, pair, command, password_reset, unlock, settings, backup
-  entity_type TEXT NOT NULL,  -- session, user, role, content, presentation, design, touch_menu, stele,
+  entity_type TEXT NOT NULL,  -- session, user, role, content, presentation, design, touch_menu, font, stele,
                               -- schedule, settings
   entity_id INTEGER, entity_name TEXT NOT NULL DEFAULT '',
   summary TEXT NOT NULL,      -- deutscher Satz ohne Subjekt: „hat die Präsentation „Foyer“ veröffentlicht“
@@ -382,7 +390,22 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
     "bg_color": "#0F2747", "text_color": "#FFFFFF", "accent_color": "#F5B400",
     "bg_image_content_id": null, "overlay": 0.4,  // Abdunklung über Hintergrundbild 0..0.8
     "align": "left",                              // left | center
-    "size": "m"                                   // s | m | l (Schriftgrößen-Stufe)
+    "size": "m",                                  // s | m | l (Schriftgrößen-Stufe)
+    // Feingestaltung – alle optional, null = wie Design (theme) bzw. Standard der Vorlage:
+    "heading_font": null, "body_font": null,      // Schrift-Schlüssel (§5.5)
+    "heading_weight": null, "body_weight": null,  // 100..900 in Hunderterschritten
+    "body_px": null,                              // 28..96, eigene Fließtextgröße statt size
+    "heading_scale": null,                        // 1.2..3.5 × Fließtext (Standard 2.15, Aussage 2.5)
+    "line_height": null,                          // 1.0..2.0 (Standard 1.4)
+    "heading_tracking": null,                     // -0.05..0.25 em (Standard -0.012)
+    "heading_case": null,                         // none | upper
+    "title_color": null, "subtitle_color": null,  // Standard: Textfarbe bzw. Akzentfarbe
+    "bg_color2": null, "bg_angle": null,          // Farbverlauf bg_color → bg_color2, Winkel 0..360 (Standard 180)
+    "padding": null,                              // s | l (Standard m)
+    "valign": null,                               // top | bottom (Standard Mitte)
+    "box": null, "box_color": null, "box_radius": null,  // Textfeld: none | solid | glass, Farbe, Ecken 0..80 px
+    "rule": null,                                 // false = Akzentlinie aus
+    "logo_corner": null                           // top-left | top-right | bottom-left | bottom-right (Logo des Designs)
   }
 }
 ```
@@ -408,9 +431,16 @@ Der Server füllt fehlende Schlüssel immer mit Standardwerten auf (`merge_defau
     "ticker_speed": 120,                            // px/s (40..400)
     "ticker_separator": "•"
   },
-  "theme": { "font": "sans", "accent_color": "#F5B400" }   // font: sans | serif | condensed
+  "theme": {
+    "font": "sans", "accent_color": "#F5B400",      // font: Schrift-Schlüssel für Text, Header-Untertitel, Footer
+    // Standard der Info-Folien (null = Standard der Vorlage), Bedeutung wie §5.4:
+    "heading_font": null,                           // null = wie font; auch Header-Titel
+    "heading_weight": null, "body_weight": null, "line_height": null, "heading_tracking": null, "heading_case": null
+  }
 }
 ```
+- **Schrift-Schlüssel:** mitgeliefert (`web/shared/fonts.js` `BUILTIN_FONTS`, Dateien in `web/shared/fonts/`, OFL, Teilmenge „latin“): `sans` (Inter), `atkinson` (Atkinson Hyperlegible Next), `montserrat`, `nunito`, `condensed` (Roboto Condensed), `oswald`, `bebas` (Bebas Neue), `serif` (Source Serif 4), `lora`, `playfair` (Playfair Display) – oder hochgeladen `custom-<id>` (Tabelle `fonts`, §7.6). Unbekannte Schlüssel → 422.
+- Neue optionale Felder (§5.4 Feingestaltung, Theme ab `heading_font`) mit Wert `null` entfallen in der aufgelösten Form (§8) → veröffentlichte Stände behalten ihren Status-Hash.
 
 ### 5.6 Touch-Menü (`touch_menus.config`)
 ```json
@@ -633,7 +663,8 @@ Body: { "settings": {…}|null, "design": {Design-config}|null, "touch_menu": {T
         "items": [{ "id": 11|null, "content_id": 7, "content": {"type": "text"|"web", "data": {…}}|null,
                     "enabled", "duration_s", "transition", "valid_from", "valid_until", "caption", "options" }] }
 Antwort: { "settings": {vollständig}, "design": {…config, "logo_url"}|null, "touch_menu": {aufgelöst wie Manifest}|null,
-           "slides": [Slide (§8), gleiche Reihenfolge, auch deaktivierte mit "enabled": false; unbekannter Inhalt → "type": "missing"] }
+           "slides": [Slide (§8), gleiche Reihenfolge, auch deaktivierte mit "enabled": false; unbekannter Inhalt → "type": "missing"],
+           "fonts": {verwendete hochgeladene Schriften wie Manifest §8} }
 ```
 `content` überschreibt die gespeicherten Daten eines text/web-Inhalts (ungespeicherte Änderungen im Editor).
 Hintergrund-Abfragen der UI senden `X-Background-Poll: 1` – sie verlängern die Sitzung nicht.
@@ -647,7 +678,13 @@ Hintergrund-Abfragen der UI senden `X-Background-Poll: 1` – sie verlängern di
 | DELETE | `/api/designs/<id>` (409 `in_use`, wenn Präsentationen es nutzen) | designs.edit |
 | GET/POST/PATCH/DELETE | `/api/touch-menus[/<id>]` analog (PATCH mit `expected_updated_at?`) | presentations.view / touch.edit |
 
+| GET | `/api/fonts` → `{items: [Font]}` | presentations.view oder content.view |
+| POST | `/api/fonts` (multipart: `file`, `name?`, `weight?` = `variable` \| 100..900) → `Font`; Format per Dateikopf (WOFF2, WOFF, TTF, OTF, sonst 422 `unsupported_type`), höchstens 8 MB (413) | designs.edit |
+| PATCH | `/api/fonts/<id>` `{name}` | designs.edit |
+| DELETE | `/api/fonts/<id>` (409 `in_use` mit `usages`, solange Designs, Info-Folien oder veröffentlichte Stände sie nutzen) | designs.edit |
+
 `Design = {id, name, config (vollständig), logo_url: str|null, used_by: [{id, name, status}], created_at, updated_at, updated_by: Person}`
+`Font = {id, key: "custom-<id>", name, url: "/media/<uid>/font.<format>", format, weight: int|null, size_bytes, usages: [{type, id, name, published}], created_at, created_by: Person}`
 `TouchMenu = {id, name, config (vollständig, Kacheln mit „content“: {id, type, title, thumb_url} zur Anzeige ergänzt), used_by: [...], created_at, updated_at, updated_by}` – beim Speichern wird nur `config` in der Form von §5.6 übernommen (ergänzte Felder ignorieren).
 
 ### 7.7 Stelen
@@ -733,7 +770,8 @@ Timeline-Antwort: `{timezone, days: [{date, weekday, segments: [{start: "HH:MM",
                  "date_from": null, "date_until": null, "priority": 0, "updated_at": "…"} ],
   "presentations": { "3": ResolvedPresentation },            // nur veröffentlichte (Vorschau: gewählte Quelle)
   "feeds": { "https://…/rss": { "items": ["Meldung 1", "Meldung 2"], "fetched_at": "…" } },
-  "assets": ["/media/ab12…/display.jpg", …]                 // alle Dateien zum Vorab-Laden
+  "fonts": { "custom-2": { "url": "/media/…/font.woff2", "weight": 700 | null, "name": "Hausschrift" } },  // verwendete hochgeladene Schriften
+  "assets": ["/media/ab12…/display.jpg", …]                 // alle Dateien zum Vorab-Laden (inkl. fonts)
 }
 
 ResolvedPresentation = {
@@ -778,7 +816,7 @@ Läuft in Chrome (Kiosk) auf dem Stelen-PC und – als Vorschau – in iframes d
 | `/player/?mode=mirror&stele=<id>` | Live-Ansicht (nachgebildet): lädt `/api/steles/<id>/manifest`, spielt stumm, folgt `showItem`-Nachrichten |
 
 ### 9.2 postMessage-API (nur gleiche Herkunft; Admin ↔ Player-iframe)
-Admin → Player: `{type:'goto', index}` · `{type:'next'}` · `{type:'prev'}` · `{type:'play'}` · `{type:'pause'}` · `{type:'reload'}` · `{type:'openTouch'}` · `{type:'closeTouch'}` · `{type:'render', slide: Slide, design: Design|null, settings: Diashow-Einstellungen|null, touch_menu: TouchMenu|null, view: 'slide'|'touch'}` · `{type:'showItem', item_id}` (mirror) · `{type:'setManifest', manifest}` (Vorschau mit ungespeichertem Stand).
+Admin → Player: `{type:'goto', index}` · `{type:'next'}` · `{type:'prev'}` · `{type:'play'}` · `{type:'pause'}` · `{type:'reload'}` · `{type:'openTouch'}` · `{type:'closeTouch'}` · `{type:'render', slide: Slide, design: Design|null, settings: Diashow-Einstellungen|null, touch_menu: TouchMenu|null, fonts: {…}|null, view: 'slide'|'touch'}` · `{type:'showItem', item_id}` (mirror) · `{type:'setManifest', manifest}` (Vorschau mit ungespeichertem Stand).
 Player → Admin: `{type:'player:ready', total}` · `{type:'player:state', index, total, item_id, playing, mode}` · `{type:'player:error', message}` · nur `mode=slide`: `{type:'player:fit', body_px, clipped}` (Fließtextgröße nach Fit-Text, Text abgeschnitten).
 Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 
@@ -787,6 +825,7 @@ Alle Nachrichten tragen zusätzlich `source: 'stelecms'`.
 - **Rahmen:** Header (Logo, Titel/Untertitel, Uhr/Datum in `timezone`), Footer (Laufband mit konstanter Geschwindigkeit in px/s, nahtlose Schleife, oder statischer Text). `show_header/show_footer` der Präsentation und `fullscreen` der Folie blenden aus. Folienbereich = Bühne minus Header/Footer.
 - **Folien:** Bild (`object-fit` nach `fit`, Ken-Burns optional), Video (stumm außer `sound`; `play_to_end` oder feste Dauer, bei kürzerem Video Schleife), PDF (Seiten nacheinander, je `page_duration_s`), Info-Folie (HTML/CSS nach Vorlage, gestochen scharf, fünf Vorlagen aus §5.4), Webseite (iframe, `zoom` per CSS-Scale, `sandbox="allow-scripts allow-same-origin allow-forms"`, kein top-navigation/popups; `refresh_s` > 0 → neu laden).
 - **Übergänge:** none, fade, slide-left, slide-up, zoom mit `transition_ms`; zwei Ebenen (A/B). Nächste Folie **vorab laden** (Bild `decode()`, Video `canplay` mit 8 s Timeout, iframe `load` mit 10 s Timeout) → kein Schwarzbild.
+- **Schriften:** mitgelieferte per `web/shared/fonts/fonts.css` (im Shell-Cache, offline), hochgeladene per `FontFace` aus `fonts` von Manifest bzw. `render`. Design-Theme → CSS-Variablen der Bühne (`--font-body`, `--font-heading`, `--tx-*`, `--logo-url`); die Info-Folie überschreibt nur gesetzte Werte. Fit-Text misst erst nach dem Laden der Schriften (höchstens 3 s).
 - **Bildunterschrift** (`caption`): unten im Folienbereich, Stil nach `caption_style`, mind. 40 px Schrift.
 - **Fortschrittsbalken** optional (4 px, Akzentfarbe).
 - **Standby** (keine Präsentation / keine gültige Folie): dunkler Hintergrund, `org_name` und Uhrzeit, dezent.

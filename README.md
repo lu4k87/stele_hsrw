@@ -101,14 +101,16 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 - Veranstaltung mit Pflichtangaben: Für wen?, Datum, Uhrzeit, Ort, Eintritt
 - QR-Code auf jeder Info-Folie: Adresse eingeben, der Code wird erzeugt (z. B. Anmeldung, Lageplan)
 - Lesbarkeit: Hinweis unter der Vorschau bei viel Text (über 30 Wörter), stark verkleinerter Schrift (unter 36 px) oder abgeschnittenem Text
-- Farben mit Vorschlägen, Hintergrundbild mit Abdunklung, Ausrichtung, Schriftgröße
+- Farbpaletten per Klick, Farben mit Vorschlägen, Farbverlauf, eigene Farben für Überschrift und Unterzeile, Hintergrundbild mit Abdunklung
+- Schrift je Folie: Schriftart für Überschrift und Text, Größe (Stufen oder stufenlos), Stärke, Zeilenabstand, Laufweite, Großbuchstaben – ungesetzt gilt das Design
+- Layout: Ausrichtung, senkrechte Lage, Innenabstand, Textfeld (Fläche oder Milchglas), Akzentlinie, Logo in einer Ecke
 - Live-Vorschau im Hochformat, auf Wunsch mit Header und Footer eines Designs
 
 ![Editor für Info-Folien mit Vorlage, Inhalt und Live-Vorschau](docs/img/text-editor.png)
 
 <p>
   <img src="docs/img/text-templates.png" alt="Auswahl der Vorlage" width="49%">
-  <img src="docs/img/text-design.png" alt="Gestaltung: Farben, Hintergrundbild, Ausrichtung, Schriftgröße" width="49%">
+  <img src="docs/img/text-design.png" alt="Gestaltung: Farbpaletten, Farben, Verlauf, Hintergrundbild" width="49%">
 </p>
 
 ### Präsentationen
@@ -145,7 +147,8 @@ Alle Bilder zeigen die Demo-Daten einer frischen Installation.
 
 ### Designs und Touch-Menüs
 
-- **Design:** Rahmen um alle Folien – Header (Logo, Titel, Uhr, Datum), Footer (Laufband mit Meldungen oder RSS, fester Text), Schrift, Akzentfarbe
+- **Design:** Rahmen um alle Folien – Header (Logo, Titel, Uhr, Datum), Footer (Laufband mit Meldungen oder RSS, fester Text), Farbpaletten, Akzentfarbe, Schriften für Text und Überschriften und der Typografie-Standard aller Info-Folien
+- **Schriften:** zehn freie Schriften mitgeliefert (offline auf der Stele, Lizenz OFL), eigene Hausschriften hochladbar (WOFF2, WOFF, TTF, OTF) – Verwaltung unter „Designs“
 - **Touch-Menü:** Kacheln führen zu Inhalt, Galerie oder Untermenü; nach Inaktivität zurück zur Diashow
 - Beide wiederverwendbar; die Übersicht zeigt, welche Präsentationen sie nutzen
 
