@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 import time
 from collections import namedtuple
 from datetime import timedelta
@@ -113,7 +114,7 @@ def test_orphaned_processing_content_gets_a_job(app):
 
 def test_ffmpeg_timeout_without_output():
     t0 = time.monotonic()
-    rc, _ = media.run_ffmpeg_progress(["sleep", "30"], None, lambda pct: None, timeout=0.5)
+    rc, _ = media.run_ffmpeg_progress([sys.executable, "-c", "import time; time.sleep(30)"], None, lambda pct: None, timeout=0.5)
     assert rc != 0 and time.monotonic() - t0 < 5
 
 

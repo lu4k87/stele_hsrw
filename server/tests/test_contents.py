@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import io
+import shutil
+
+import pytest
 
 from conftest import make_image, make_presentation, make_stele, make_text, pdf_bytes, png_bytes, stele_key, upload
 
@@ -36,6 +39,7 @@ def test_upload_video_processed(admin, app, video_bytes):
     assert c["urls"]["display"].endswith(".mp4")
 
 
+@pytest.mark.skipif(not shutil.which("pdftoppm"), reason="poppler (pdftoppm) nicht installiert")
 def test_upload_pdf_pages(admin):
     r = upload(admin, "Flyer.pdf", pdf_bytes(3))
     assert r.status_code == 201

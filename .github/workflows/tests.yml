@@ -25,10 +25,22 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      # Video- und PDF-Import wie beim Anwender (README: ffmpeg, poppler)
+      - name: ffmpeg und poppler
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then choco install -y --no-progress ffmpeg poppler
+          else sudo apt-get update -q && sudo apt-get install -y -q ffmpeg poppler-utils; fi
+
+      # Fehlschläge zusätzlich als Annotation: ohne Anmeldung sichtbar, Logs nicht
       - name: pytest
+        shell: bash
         run: |
           python -m pip install -q -r requirements-dev.txt
-          python -m pytest server/tests -q
+          rc=0; python -m pytest server/tests -q -rfEs > pytest.log 2>&1 || rc=$?
+          tail -60 pytest.log
+          grep -E '^(FAILED|ERROR) ' pytest.log | sed 's/^/::error::/' || true
+          exit $rc
 
       # Startskript wie beim Anwender: legt .venv an, installiert, startet; Admin und Player müssen antworten
       - name: Start mit run.sh
@@ -45,6 +57,7 @@ jobs:
           done
           kill "$pid" || true
           cat "$RUNNER_TEMP/stele.log"
+          [ $rc = 0 ] || tail -5 "$RUNNER_TEMP/stele.log" | sed 's/^/::error::/'
           exit $rc
 
       - name: Start mit run.bat
@@ -66,4 +79,5 @@ jobs:
           }
           taskkill /T /F /PID $p.Id | Out-Null
           Get-Content $log, "$log.err"
+          if ($rc) { Get-Content $log, "$log.err" -Tail 5 | ForEach-Object { "::error::$_" } }
           exit $rc
