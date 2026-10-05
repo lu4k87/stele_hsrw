@@ -1,0 +1,68 @@
+# Tests unter Linux und Windows: pytest + echter Start über run.sh/run.bat (lokale Demoversion ohne extra Server).
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHON: python
+      STELECMS_PORT: "18090"
+      STELECMS_DATA: ${{ runner.temp }}/stele-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: pytest
+        run: |
+          python -m pip install -q -r requirements-dev.txt
+          python -m pytest server/tests -q
+
+      # Startskript wie beim Anwender: legt .venv an, installiert, startet; Admin und Player müssen antworten
+      - name: Start mit run.sh
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          ./run.sh > "$RUNNER_TEMP/stele.log" 2>&1 &
+          pid=$!
+          for _ in $(seq 180); do curl -fs -o /dev/null "http://127.0.0.1:$STELECMS_PORT/admin/" && break; sleep 1; done
+          rc=0
+          for p in /admin/ /player/; do
+            curl -fs -o /dev/null "http://127.0.0.1:$STELECMS_PORT$p" || { echo "::error::$p antwortet nicht"; rc=1; }
+          done
+          kill "$pid" || true
+          cat "$RUNNER_TEMP/stele.log"
+          exit $rc
+
+      - name: Start mit run.bat
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $log = "$env:RUNNER_TEMP\stele.log"
+          $p = Start-Process cmd.exe -ArgumentList '/c', 'run.bat' -PassThru -NoNewWindow `
+            -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+          $base = "http://127.0.0.1:$env:STELECMS_PORT"
+          for ($i = 0; $i -lt 180; $i++) {
+            try { Invoke-WebRequest "$base/admin/" -UseBasicParsing -TimeoutSec 2 | Out-Null; break } catch { Start-Sleep 1 }
+          }
+          $rc = 0
+          foreach ($path in '/admin/', '/player/') {
+            try { Invoke-WebRequest "$base$path" -UseBasicParsing -TimeoutSec 5 | Out-Null }
+            catch { Write-Output "::error::$path antwortet nicht"; $rc = 1 }
+          }
+          taskkill /T /F /PID $p.Id | Out-Null
+          Get-Content $log, "$log.err"
+          exit $rc

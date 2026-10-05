@@ -392,6 +392,7 @@ Eigenes Administratorkonto und Passwörter auf der Kommandozeile:
 | `docs/SPEC.md` | Spezifikation (Datenmodell, API, Player-Vertrag, UX-Regeln) |
 | `docs/img/` | Screenshots für diese README – erzeugt mit `docs/screenshots.py` |
 | `.githooks/` | Prüfung vor jedem Commit |
+| `.github/workflows/` | Tests unter Ubuntu und Windows (GitHub Actions) |
 | `AGENTS.md` | Arbeitsregeln für KI-Assistenten (Claude Code) |
 | `data/` | Laufzeitdaten – nicht im Git |
 
@@ -446,6 +447,11 @@ Nach sichtbaren Änderungen die Bilder in `docs/img/` neu erzeugen:
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m pytest server/tests -q
 ```
+
+- **GitHub Actions** (`.github/workflows/tests.yml`) bei jedem Push auf `main`: Ubuntu und Windows, Python 3.10 und 3.12
+  - pytest
+  - echter Start über `run.sh` bzw. `run.bat` → `/admin/` und `/player/` müssen antworten
+- Ergebnis im Reiter *Actions* des Repos
 
 ## 9. Backup
 
