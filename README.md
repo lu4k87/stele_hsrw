@@ -448,8 +448,10 @@ Nach sichtbaren Änderungen die Bilder in `docs/img/` neu erzeugen:
 .venv/bin/python -m pytest server/tests -q
 ```
 
+- Windows (PowerShell): `.venv\Scripts\python -m pytest server/tests -q`
+- Ohne poppler (`pdftoppm`) wird der PDF-Test übersprungen, alle anderen laufen
 - **GitHub Actions** (`.github/workflows/tests.yml`) bei jedem Push auf `main`: Ubuntu und Windows, Python 3.10 und 3.12
-  - pytest
+  - ffmpeg und poppler installiert (wie beim Anwender), dann pytest
   - echter Start über `run.sh` bzw. `run.bat` → `/admin/` und `/player/` müssen antworten
 - Ergebnis im Reiter *Actions* des Repos
 
