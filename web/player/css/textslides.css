@@ -1,0 +1,131 @@
+/* Stelen-Player: Info-Folien (fünf Vorlagen) – Maße in Bühnen-Pixeln, siehe player.css. */
+
+/* ---------- Info-Folien (fünf Vorlagen) ---------- */
+
+.tx {
+  --body: 48;
+  --tx-shade: 0.4;
+  display: flex;
+  flex-direction: column;
+  background: var(--tx-bg);
+  color: var(--tx-fg);
+  font-size: calc(var(--body) * var(--k, 1) * 1px);
+  line-height: 1.4;
+  hyphens: auto;
+  hyphenate-limit-chars: 10 4 4; /* nur lange Wörter trennen */
+  overflow-wrap: break-word;
+}
+.tx-size-s { --body: 42; }
+.tx-size-m { --body: 48; }
+.tx-size-l { --body: 56; }
+.tx-bgimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tx-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, var(--tx-shade)); }
+.tx .is-missing { display: none; }
+.tx-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 104px 88px;
+  overflow: hidden;
+}
+/* Zentriert, solange Platz ist; bei Überlänge oben beginnend (automatische Ränder werden 0). */
+.tx-content > :first-child { margin-top: auto; }
+.tx-content > :last-child { margin-bottom: auto; }
+.tx-content.is-clipped {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 160px), transparent calc(100% - 40px));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 160px), transparent calc(100% - 40px));
+}
+.tx-align-center { text-align: center; }
+.tx-align-center .tx-rule { margin-left: auto; margin-right: auto; }
+
+.tx-rule { flex: none; width: 128px; height: 12px; border-radius: 6px; background: var(--tx-accent); margin-bottom: 56px; }
+.tx-title {
+  margin: 0;
+  font-size: 2.15em;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.tx-subtitle { margin: 0.55em 0 0; font-size: 1.22em; font-weight: 600; line-height: 1.25; color: var(--tx-accent); }
+.tx-body { margin-top: 1.1em; }
+.tx-body p { margin: 0 0 0.7em; }
+.tx-body p:last-child { margin-bottom: 0; }
+
+/* Bild + Text */
+.tx-image_text .tx-media { position: relative; z-index: 1; flex: 0 0 44%; overflow: hidden; background: rgba(0, 0, 0, 0.2); }
+.tx-image_text .tx-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tx-image_text .tx-media::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: var(--tx-accent);
+}
+.tx-image_text .tx-content { padding-top: 72px; padding-bottom: 88px; }
+.tx-image_text .tx-content > :first-child { margin-top: 0; }
+
+/* Aussage / Zitat */
+.tx-statement .tx-content { padding-left: 104px; padding-right: 104px; }
+.tx-quote {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 5.6em;
+  line-height: 0.7;
+  height: 0.5em;
+  color: var(--tx-accent);
+  font-weight: 700;
+}
+.tx-statement .tx-title { font-size: 2.5em; font-weight: 700; line-height: 1.12; margin-top: 0.35em; }
+.tx-attrib { margin: 1em 0 0; font-size: 1.1em; font-weight: 600; color: var(--tx-accent); }
+
+/* Veranstaltung */
+.tx-event-top { display: flex; align-items: center; gap: 40px; margin-bottom: 56px; }
+.tx-align-center .tx-event-top { flex-direction: column; gap: 32px; }
+.tx-datebadge {
+  flex: none;
+  width: 208px;
+  height: 208px;
+  border-radius: 28px;
+  background: var(--tx-accent);
+  color: var(--tx-on-accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.tx-badge-day { font-size: 112px; font-weight: 800; letter-spacing: -0.02em; }
+.tx-badge-month { font-size: 44px; font-weight: 700; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.06em; }
+.tx-kicker { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--tx-accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.tx-facts { list-style: none; margin: 1.1em 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.55em; }
+.tx-facts li { display: flex; align-items: center; gap: 28px; font-size: 1.08em; font-weight: 600; line-height: 1.25; }
+.tx-facts svg { color: var(--tx-accent); width: 1.15em; height: 1.15em; }
+.tx-align-center .tx-facts { align-items: center; }
+
+/* QR-Code (alle Vorlagen): immer dunkel auf weiß, groß genug zum Scannen aus ca. 1 m */
+.tx-qr { display: flex; align-items: center; gap: 36px; margin-top: 1.2em; }
+.tx-align-center .tx-qr { flex-direction: column; gap: 20px; }
+.tx-qr-code { flex: none; width: 7.5em; max-width: 420px; min-width: 300px; padding: 12px; background: #ffffff; border-radius: 20px; line-height: 0; }
+.tx-qr-code svg { display: block; width: 100%; height: auto; }
+.tx-qr-label { margin: 0; font-size: 1.05em; font-weight: 700; line-height: 1.25; }
+
+/* Liste */
+.tx-list-items { list-style: none; margin: 1.1em 0 0; padding: 0; }
+.tx-list-items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 36px;
+  padding: 0.5em 0;
+  font-size: 1.1em;
+  line-height: 1.3;
+  border-bottom: 2px solid color-mix(in srgb, var(--tx-fg) 18%, transparent);
+}
+.tx-list-items li:last-child { border-bottom: 0; }
+.tx-bullet { flex: none; width: 0.52em; height: 0.52em; margin-top: 0.4em; border-radius: 0.12em; background: var(--tx-accent); }
+.tx-align-center .tx-list-items { align-self: center; text-align: left; }

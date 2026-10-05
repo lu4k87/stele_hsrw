@@ -5,7 +5,7 @@
 //   nicht mehr benötigte Dateien entfernen
 // - Seiten in den Modi preview/slide/mirror werden nicht bedient (reines Netz).
 
-const SHELL_CACHE = 'stelecms-shell-v1';
+const SHELL_CACHE = 'stelecms-shell-v2';
 const MEDIA_CACHE = 'stelecms-media-v1';
 const META_CACHE = 'stelecms-meta-v1';
 const KEY_URL = '/player/__stelecms_key';
@@ -13,7 +13,8 @@ const NETWORK_TIMEOUT_MS = 6000;
 const PARALLEL = 2;
 
 const SHELL_FILES = [
-  '/player/', '/player/index.html', '/player/css/player.css',
+  '/player/', '/player/index.html', '/player/css/player.css', '/player/css/frame.css',
+  '/player/css/textslides.css', '/player/css/touch.css', '/player/css/states.css',
   '/player/js/main.js', '/player/js/api.js', '/player/js/config.js', '/player/js/frame.js', '/player/js/log.js',
   '/player/js/messaging.js', '/player/js/overlays.js', '/player/js/player.js', '/player/js/schedule.js',
   '/player/js/slideshow.js', '/player/js/stage.js', '/player/js/store.js', '/player/js/telemetry.js',
