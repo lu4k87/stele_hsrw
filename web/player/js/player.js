@@ -9,6 +9,7 @@ import { Frame, frameInsets } from './frame.js';
 import { Slideshow, preparePresentation } from './slideshow.js';
 import { TouchMode } from './touch.js';
 import { Standby, NightScreen } from './overlays.js';
+import { registerFonts } from '/shared/fonts.js';
 
 export class Player {
   // opts: stageEl, stage, mode ('normal'|'mirror'|'preview'|'slide'), muted, touchAllowed,
@@ -96,6 +97,7 @@ export class Player {
 
   applyManifest(manifest, { immediate = false, startIndex = null } = {}) {
     this.manifest = manifest;
+    registerFonts(manifest.fonts);
     this.timezone = validTimezone(manifest.timezone || DEFAULT_TIMEZONE);
     this.frame.setContext({ timezone: this.timezone, feeds: manifest.feeds || {} });
     this.standby.set({ orgName: manifest.org_name || '', timezone: this.timezone });
@@ -179,6 +181,7 @@ export class Player {
   // ---------- Einzelfolie (mode=slide) ----------
 
   render(msg) {
+    registerFonts(msg.fonts);
     const settings = msg.settings && typeof msg.settings === 'object' ? msg.settings : {};
     const slide = msg.slide && typeof msg.slide === 'object' ? msg.slide : null;
     const pres = preparePresentation({

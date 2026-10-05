@@ -8,9 +8,12 @@
   display: flex;
   flex-direction: column;
   background: var(--tx-bg);
+  background-image: var(--tx-grad, none);
   color: var(--tx-fg);
+  font-family: var(--tx-font, inherit);
   font-size: calc(var(--body) * var(--k, 1) * 1px);
-  line-height: 1.4;
+  font-weight: var(--tx-w-body, 400);
+  line-height: var(--tx-lh, 1.4);
   hyphens: auto;
   hyphenate-limit-chars: 10 4 4; /* nur lange Wörter trennen */
   overflow-wrap: break-word;
@@ -34,6 +37,35 @@
 /* Zentriert, solange Platz ist; bei Überlänge oben beginnend (automatische Ränder werden 0). */
 .tx-content > :first-child { margin-top: auto; }
 .tx-content > :last-child { margin-bottom: auto; }
+.tx-valign-top .tx-content > :first-child { margin-top: 0; }
+.tx-valign-bottom .tx-content > :last-child { margin-bottom: 0; }
+/* Innenabstand: s/l (m = Standard der Vorlage) */
+.tx-pad-s .tx-content { padding: 72px 64px; }
+.tx-pad-l .tx-content { padding: 152px 128px; }
+/* Textfeld: Fläche hinter dem Text, mit Abstand zum Folienrand */
+.tx-box .tx-content { margin: 56px; border-radius: var(--tx-box-r, 32px); }
+.tx-box-solid .tx-content { background: var(--tx-box, color-mix(in srgb, var(--tx-bg) 82%, #000)); box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28); }
+.tx-box-glass .tx-content {
+  background: color-mix(in srgb, var(--tx-box, #000) 46%, transparent);
+  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(28px);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tx-fg) 16%, transparent);
+}
+.tx-box.tx-image_text .tx-content { margin-top: 40px; }
+.tx-norule .tx-rule, .tx-norule.tx-image_text .tx-media::after { display: none; }
+/* Logo des Designs in einer Ecke */
+.tx-logo {
+  position: absolute;
+  z-index: 2;
+  width: 200px;
+  height: 120px;
+  background: var(--logo-url, none) center / contain no-repeat;
+  pointer-events: none;
+}
+.tx-logo--top-left { top: 48px; left: 56px; background-position: left center; }
+.tx-logo--top-right { top: 48px; right: 56px; background-position: right center; }
+.tx-logo--bottom-left { bottom: 48px; left: 56px; background-position: left center; }
+.tx-logo--bottom-right { bottom: 48px; right: 56px; background-position: right center; }
 .tx-content.is-clipped {
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 160px), transparent calc(100% - 40px));
   mask-image: linear-gradient(to bottom, #000 calc(100% - 160px), transparent calc(100% - 40px));
@@ -44,13 +76,16 @@
 .tx-rule { flex: none; width: 128px; height: 12px; border-radius: 6px; background: var(--tx-accent); margin-bottom: 56px; }
 .tx-title {
   margin: 0;
-  font-size: 2.15em;
-  font-weight: 800;
+  font-family: var(--font-heading, inherit);
+  font-size: calc(var(--tx-hs, 2.15) * 1em);
+  font-weight: var(--tx-w-heading, 800);
   line-height: 1.08;
-  letter-spacing: -0.012em;
+  letter-spacing: var(--tx-track, -0.012em);
+  text-transform: var(--tx-case, none);
   text-wrap: balance;
+  color: var(--tx-title, inherit);
 }
-.tx-subtitle { margin: 0.55em 0 0; font-size: 1.22em; font-weight: 600; line-height: 1.25; color: var(--tx-accent); }
+.tx-subtitle { margin: 0.55em 0 0; font-family: var(--font-heading, inherit); font-size: 1.22em; font-weight: 600; line-height: 1.25; color: var(--tx-sub, var(--tx-accent)); }
 .tx-body { margin-top: 1.1em; }
 .tx-body p { margin: 0 0 0.7em; }
 .tx-body p:last-child { margin-bottom: 0; }
@@ -81,8 +116,8 @@
   color: var(--tx-accent);
   font-weight: 700;
 }
-.tx-statement .tx-title { font-size: 2.5em; font-weight: 700; line-height: 1.12; margin-top: 0.35em; }
-.tx-attrib { margin: 1em 0 0; font-size: 1.1em; font-weight: 600; color: var(--tx-accent); }
+.tx-statement .tx-title { font-size: calc(var(--tx-hs, 2.5) * 1em); font-weight: var(--tx-w-heading, 700); line-height: 1.12; margin-top: 0.35em; }
+.tx-attrib { margin: 1em 0 0; font-size: 1.1em; font-weight: 600; color: var(--tx-sub, var(--tx-accent)); }
 
 /* Veranstaltung */
 .tx-event-top { display: flex; align-items: center; gap: 40px; margin-bottom: 56px; }
@@ -102,7 +137,7 @@
 }
 .tx-badge-day { font-size: 112px; font-weight: 800; letter-spacing: -0.02em; }
 .tx-badge-month { font-size: 44px; font-weight: 700; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.06em; }
-.tx-kicker { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--tx-accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.tx-kicker { margin: 0; font-size: 1.15em; font-weight: 700; color: var(--tx-sub, var(--tx-accent)); text-transform: uppercase; letter-spacing: 0.04em; }
 .tx-facts { list-style: none; margin: 1.1em 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.55em; }
 .tx-facts li { display: flex; align-items: center; gap: 28px; font-size: 1.08em; font-weight: 600; line-height: 1.25; }
 .tx-facts svg { color: var(--tx-accent); width: 1.15em; height: 1.15em; }

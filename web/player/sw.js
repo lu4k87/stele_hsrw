@@ -5,7 +5,7 @@
 //   nicht mehr benötigte Dateien entfernen
 // - Seiten in den Modi preview/slide/mirror werden nicht bedient (reines Netz).
 
-const SHELL_CACHE = 'stelecms-shell-v2';
+const SHELL_CACHE = 'stelecms-shell-v3';
 const MEDIA_CACHE = 'stelecms-media-v1';
 const META_CACHE = 'stelecms-meta-v1';
 const KEY_URL = '/player/__stelecms_key';
@@ -21,7 +21,11 @@ const SHELL_FILES = [
   '/player/js/time.js', '/player/js/touch.js', '/player/js/util.js',
   '/player/js/slides/common.js', '/player/js/slides/fit.js', '/player/js/slides/image.js', '/player/js/slides/index.js',
   '/player/js/slides/pdf.js', '/player/js/slides/text.js', '/player/js/slides/video.js', '/player/js/slides/web.js',
-  '/shared/icons.js',
+  '/shared/icons.js', '/shared/qr.js', '/shared/fonts.js', '/shared/fonts/fonts.css',
+  // Mitgelieferte Schriften (web/shared/fonts/fonts.css)
+  ...['inter-latin-wght', 'source-serif-4-latin-wght', 'roboto-condensed-latin-wght', 'montserrat-latin-wght',
+    'lora-latin-wght', 'oswald-latin-wght', 'playfair-display-latin-wght', 'atkinson-hyperlegible-next-latin-wght',
+    'nunito-latin-wght', 'bebas-neue-latin-400'].map((f) => `/shared/fonts/${f}.woff2`),
 ];
 const NO_SW_MODES = ['preview', 'slide', 'mirror'];
 

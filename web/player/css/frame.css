@@ -43,6 +43,7 @@
 .hd-titles { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .fit-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hd-title {
+  font-family: var(--font-heading, inherit);
   font-size: calc(var(--hh) * 0.3px * var(--fit, 1));
   font-weight: 700;
   line-height: 1.12;

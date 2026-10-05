@@ -5,12 +5,46 @@ import { h, clamp, readableTextColor, safeColor } from '../util.js';
 import { TEXT_STYLE_DEFAULTS, mergeDefaults } from '../config.js';
 import { iconSvg } from '/shared/icons.js';
 import { qrSvg } from '/shared/qr.js';
+import { fontStack, fontsReady } from '/shared/fonts.js';
 import { baseView, durationMs, decodeImage, textParagraphs } from './common.js';
 import { fitBox } from './fit.js';
 
 const TEMPLATES = ['title_text', 'image_text', 'statement', 'event', 'list'];
 const BODY_PX = { s: 42, m: 48, l: 56 };
 const MIN_BODY_PX = 30; // Fit-Text verkleinert Fließtext höchstens bis hierhin
+const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+
+// Typografie (Design-Theme und Info-Folie): Feld → CSS-Variable; null/fehlend = erben (Bühne bzw. CSS-Standard)
+export const TYPO_VARS = [
+  ['heading_weight', '--tx-w-heading', (v) => String(v)],
+  ['body_weight', '--tx-w-body', (v) => String(v)],
+  ['line_height', '--tx-lh', (v) => String(v)],
+  ['heading_tracking', '--tx-track', (v) => `${v}em`],
+  ['heading_case', '--tx-case', (v) => (v === 'upper' ? 'uppercase' : 'none')],
+];
+
+const isSet = (v) => v !== null && v !== undefined;
+
+// Feingestaltung der Folie als CSS-Variablen; nur gesetzte Werte überschreiben das Design.
+function styleVars(style, bg) {
+  const vars = {};
+  for (const [key, prop, fmt] of TYPO_VARS) if (isSet(style[key])) vars[prop] = fmt(style[key]);
+  const heading = fontStack(style.heading_font);
+  const body = fontStack(style.body_font);
+  if (body) vars['--tx-font'] = body;
+  if (heading) vars['--font-heading'] = heading;
+  else if (body) vars['--font-heading'] = body;
+  if (isSet(style.heading_scale)) vars['--tx-hs'] = String(clamp(Number(style.heading_scale) || 2.15, 1.2, 3.5));
+  if (isSet(style.title_color)) vars['--tx-title'] = safeColor(style.title_color, 'inherit');
+  if (isSet(style.subtitle_color)) vars['--tx-sub'] = safeColor(style.subtitle_color, 'inherit');
+  if (isSet(style.bg_color2)) {
+    const angle = clamp(Number.isFinite(Number(style.bg_angle)) && isSet(style.bg_angle) ? Number(style.bg_angle) : 180, 0, 360);
+    vars['--tx-grad'] = `linear-gradient(${angle}deg, ${bg}, ${safeColor(style.bg_color2, bg)})`;
+  }
+  if (isSet(style.box_color)) vars['--tx-box'] = safeColor(style.box_color, bg);
+  if (isSet(style.box_radius)) vars['--tx-box-r'] = `${clamp(Number(style.box_radius) || 0, 0, 80)}px`;
+  return vars;
+}
 
 const dateLong = new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const monthShort = new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', month: 'short' });
@@ -122,10 +156,16 @@ export function buildTextSlide(slide) {
   const bg = safeColor(style.bg_color, TEXT_STYLE_DEFAULTS.bg_color);
   const fg = safeColor(style.text_color, TEXT_STYLE_DEFAULTS.text_color);
   const accent = safeColor(style.accent_color, TEXT_STYLE_DEFAULTS.accent_color);
+  const bodyPx = isSet(style.body_px) ? clamp(Number(style.body_px) || BODY_PX[size], 28, 96) : BODY_PX[size];
+  const cls = [`sv sv-text tx tx-${layout} tx-size-${size} tx-align-${align}`];
+  if (['s', 'l'].includes(style.padding)) cls.push(`tx-pad-${style.padding}`);
+  if (['top', 'bottom'].includes(style.valign)) cls.push(`tx-valign-${style.valign}`);
+  if (['solid', 'glass'].includes(style.box)) cls.push(`tx-box tx-box-${style.box}`);
+  if (style.rule === false) cls.push('tx-norule');
   const root = h('div', {
-    class: `sv sv-text tx tx-${layout} tx-size-${size} tx-align-${align}`,
+    class: cls.join(' '),
     lang: 'de',
-    style: { '--tx-bg': bg, '--tx-fg': fg, '--tx-accent': accent, '--tx-on-accent': readableTextColor(accent) },
+    style: { '--tx-bg': bg, '--tx-fg': fg, '--tx-accent': accent, '--tx-on-accent': readableTextColor(accent), '--body': String(bodyPx), ...styleVars(style, bg) },
   });
   const images = [];
   if (style.bg_image_url) {
@@ -145,8 +185,10 @@ export function buildTextSlide(slide) {
   else children = buildTitleText(f);
   const content = h('div', { class: 'tx-content' }, children, buildQr(f));
   root.appendChild(content);
-  const minK = clamp(MIN_BODY_PX / BODY_PX[size], 0.5, 1);
-  return { root, content, images, minK, bodyPx: BODY_PX[size] };
+  // Logo des Designs in einer Ecke (Bild kommt per --logo-url von der Bühne; ohne Logo bleibt die Ecke leer)
+  if (CORNERS.includes(style.logo_corner)) root.appendChild(h('div', { class: `tx-logo tx-logo--${style.logo_corner}`, 'aria-hidden': 'true' }));
+  const minK = clamp(MIN_BODY_PX / bodyPx, 0.5, 1);
+  return { root, content, images, minK, bodyPx, fonts: [style.heading_font, style.body_font].filter(isSet) };
 }
 
 // Fit-Ergebnis als DOM-Ereignis melden (Einzelfolien-Vorschau reicht es an den Editor weiter)
@@ -156,12 +198,13 @@ function fit(root, content, minK, bodyPx) {
 }
 
 export function createTextSlide(slide, ctx) {
-  const { root, content, images, minK, bodyPx } = buildTextSlide(slide);
+  const { root, content, images, minK, bodyPx, fonts } = buildTextSlide(slide);
   const view = baseView(root);
   view.plannedMs = durationMs(slide, ctx.settings);
   view.load = async () => {
     // Fehlende Bilder blenden nur das Bild aus – die Folie bleibt lesbar.
     await Promise.all(images.map((img) => decodeImage(img, 10_000).catch(() => img.classList.add('is-missing'))));
+    await fontsReady(fonts); // Textmaße erst mit der echten Schrift (sonst passt Fit-Text nicht)
     fit(root, content, minK, bodyPx);
   };
   view.refit = () => fit(root, content, minK, bodyPx);

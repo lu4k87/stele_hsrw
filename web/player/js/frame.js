@@ -5,8 +5,8 @@
 import { h, clampNumber, safeColor, readableTextColor } from './util.js';
 import { formatTime, formatDate, onMinute, clock } from './time.js';
 import { fitLine } from './slides/fit.js';
-
-const FONT_CLASSES = ['font-sans', 'font-serif', 'font-condensed'];
+import { fontStack } from '/shared/fonts.js';
+import { TYPO_VARS } from './slides/text.js';
 
 export function headerHeight(design) {
   return Math.round(clampNumber(design && design.header && design.header.height, 100, 400, 180));
@@ -78,9 +78,17 @@ export class Frame {
     this.key = key;
     this.design = design;
     const theme = design ? design.theme : { font: 'sans', accent_color: '#F5B400' };
-    const font = ['sans', 'serif', 'condensed'].includes(theme.font) ? theme.font : 'sans';
-    this.stageEl.classList.remove(...FONT_CLASSES);
-    this.stageEl.classList.add(`font-${font}`);
+    const st = this.stageEl.style;
+    const body = fontStack(theme.font) || fontStack('sans');
+    st.setProperty('--font-body', body);
+    st.setProperty('--font-heading', fontStack(theme.heading_font) || body);
+    // Typografie-Standard des Designs für Info-Folien (die Folie kann einzelne Werte überschreiben)
+    for (const [key, prop, fmt] of TYPO_VARS) {
+      if (theme[key] !== null && theme[key] !== undefined) st.setProperty(prop, fmt(theme[key]));
+      else st.removeProperty(prop);
+    }
+    if (design && design.logo_url) st.setProperty('--logo-url', `url("${encodeURI(design.logo_url)}")`);
+    else st.removeProperty('--logo-url');
     const accent = safeColor(theme.accent_color, '#F5B400');
     this.stageEl.style.setProperty('--accent', accent);
     this.stageEl.style.setProperty('--accent-fg', readableTextColor(accent));
