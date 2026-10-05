@@ -49,7 +49,7 @@ export function livePreview({ label = null, title = 'Live-Vorschau', delay = 450
       const res = await api.post('/api/preview/resolve', body, { signal: ctrl.signal });
       if (my !== seq || destroyed) return;
       const msg = pick(res);
-      if (msg) send({ type: 'render', slide: null, design: null, settings: null, touch_menu: null, view: 'slide', ...msg });
+      if (msg) send({ type: 'render', slide: null, design: null, settings: null, touch_menu: null, view: 'slide', fonts: res.fonts || null, ...msg });
       setStatus('ok', '');
     } catch (err) {
       if (err?.name === 'AbortError' || my !== seq || destroyed) return;

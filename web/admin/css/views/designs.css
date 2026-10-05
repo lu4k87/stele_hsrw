@@ -1,9 +1,5 @@
 /* Designs – Liste und Editor (Präfix de-). Nur Tokens; Farben der Skizzen kommen aus den Design-Daten. */
 
-.de-font-sans { font-family: var(--font); }
-.de-font-serif { font-family: Georgia, "Noto Serif", "DejaVu Serif", "Times New Roman", serif; }
-.de-font-condensed { font-family: "Roboto Condensed", "Arial Narrow", "Liberation Sans Narrow", "Noto Sans", sans-serif; font-stretch: condensed; }
-
 /* ---------- Liste ---------- */
 .de-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 .de-card {
@@ -55,14 +51,12 @@
 .de-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-5); }
 .de-ticker { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 
-.de-fonts { display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
-.de-font {
-  display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; min-width: 0;
-  padding: var(--sp-3); border: 2px solid var(--border); border-radius: var(--r-lg); background: var(--surface); color: var(--text);
+/* ---------- Eigene Schriften (Liste) ---------- */
+.de-fonts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.de-fontcard {
+  display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; padding: var(--sp-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
 }
-.de-font:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-hover); }
-.de-font[aria-checked="true"] { border-color: var(--primary); background: var(--primary-soft); }
-.de-font__name { font-weight: var(--fw-bold); font-size: var(--fs-lg); }
-.de-font__sample { font-size: var(--fs-sm); color: var(--text-2); }
-.de-font__digits { font-size: var(--fs-md); }
-
+.de-fontcard__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2); }
+.de-fontcard__name { margin: 0; padding-top: 6px; font-size: var(--fs-lg); overflow-wrap: anywhere; }
+.de-fontcard__sample { margin: 0; font-size: var(--fs-2xl); line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }

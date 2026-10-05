@@ -1,4 +1,5 @@
 // Designs (#/designs): Rahmen (Header/Footer) als Liste mit Mini-Vorschau; anlegen, duplizieren, löschen.
+// Darunter „Eigene Schriften“: hochladen, umbenennen, löschen (Recht „Designs bearbeiten“).
 import { h, useStyles, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
 import { api, ApiError, errorMessage } from '../api.js';
@@ -6,18 +7,21 @@ import { can } from '../session.js';
 import { formatRelative, formatDateTime, plural } from '../format.js';
 import { page, pageHeader, button } from '../ui/page.js';
 import { field, input, select, setFieldErrors, clearFieldErrors } from '../ui/form.js';
-import { openDialog, confirmDialog } from '../ui/dialog.js';
+import { openDialog, confirmDialog, promptDialog } from '../ui/dialog.js';
 import { menuButton } from '../ui/menu.js';
 import { toast } from '../ui/toast.js';
 import { emptyState, errorState, skeletonGrid } from '../ui/empty.js';
 import { contentStyles, showInUse } from '../ui/content-common.js';
 import { usedBy } from './touch-menus.js';
+import { fontStack } from '/shared/fonts.js';
+import { loadFonts, uploadFontDialog } from '../ui/typography.js';
 
 export default async function mount(root, ctx) {
   await Promise.all([useStyles('/admin/css/views/designs.css'), useStyles('/admin/css/views/touch-menus.css'), contentStyles()]);
   const canEdit = can('designs.edit');
   let items = [];
   const results = h('div');
+  const fontsBox = h('div');
 
   root.append(page({ wide: true, className: 'de-page' },
     pageHeader({
@@ -25,7 +29,12 @@ export default async function mount(root, ctx) {
       description: 'Rahmen um die Folien: Header mit Logo, Titel und Uhr, Footer mit Laufband oder Text.',
       actions: canEdit ? [button({ label: 'Neues Design', icon: 'plus', variant: 'primary', onClick: () => openCreate() })] : [],
     }),
-    results));
+    results,
+    h('section', { class: 'stack', 'aria-labelledby': 'de-fonts-title' },
+      h('div', { class: 'section-title' }, h('h2', { id: 'de-fonts-title' }, 'Eigene Schriften'),
+        canEdit ? h('div', { class: 'cluster' }, button({ label: 'Schrift hochladen', icon: 'upload', onClick: async () => { if (await uploadFontDialog()) loadFontList(); } })) : null),
+      h('p', { class: 'text-2' }, 'Zusätzlich zu den mitgelieferten Schriften wählbar in Designs und Info-Folien. Je Datei eine Schrift; Normal und Fett einzeln hochladen.'),
+      fontsBox)));
 
   async function load() {
     if (!items.length) fill(results, skeletonGrid(4, '300px'));
@@ -126,7 +135,67 @@ export default async function mount(root, ctx) {
     }
   }
 
+  async function loadFontList() {
+    try {
+      const fonts = await loadFonts(ctx.signal);
+      renderFonts(fonts);
+    } catch (err) {
+      if (err?.name !== 'AbortError') fill(fontsBox, errorState({ error: err, onRetry: loadFontList }));
+    }
+  }
+
+  function renderFonts(fonts) {
+    if (!fonts.length) {
+      fill(fontsBox, emptyState({ icon: 'type', title: 'Noch keine eigene Schrift', text: 'Mitgeliefert sind zehn freie Schriften. Eine Hausschrift (WOFF2, WOFF, TTF, OTF) kann hier ergänzt werden.' }));
+      return;
+    }
+    fill(fontsBox, h('ul', { class: 'de-fonts', 'aria-label': 'Eigene Schriften' }, fonts.map((f) => {
+      const used = f.usages || [];
+      const meta = [f.format.toUpperCase(), f.weight ? `Stärke ${f.weight}` : 'variabel', `${Math.max(1, Math.round(f.size_bytes / 1024))} KB`];
+      return h('li', { class: 'de-fontcard' },
+        h('div', { class: 'de-fontcard__head' },
+          h('h3', { class: 'de-fontcard__name' }, f.name),
+          canEdit ? menuButton({ label: `Aktionen für „${f.name}“`, items: () => [
+            { label: 'Umbenennen', icon: 'pencil', onClick: () => renameFont(f) },
+            { separator: true },
+            { label: 'Löschen', icon: 'trash', danger: true, onClick: () => removeFont(f) },
+          ] }) : null),
+        h('p', { class: 'de-fontcard__sample', style: { fontFamily: fontStack(f.key) } }, 'Aa Ää Öö Üü ß 0123'),
+        h('p', { class: 'text-2 text-sm' }, meta.join(' · ')),
+        h('p', { class: 'text-2 text-sm' }, used.length ? `Verwendet in ${plural(used.length, 'Stelle', 'Stellen')}` : 'Nicht verwendet'));
+    })));
+  }
+
+  async function renameFont(f) {
+    const name = await promptDialog({ title: 'Schrift umbenennen', label: 'Name', value: f.name, maxLength: 80 });
+    if (!name || name === f.name) return;
+    try {
+      await api.patch(`/api/fonts/${f.id}`, { name });
+      toast.success('Schrift umbenannt.');
+      loadFontList();
+    } catch (err) { toast.error(errorMessage(err)); }
+  }
+
+  async function removeFont(f) {
+    const used = f.usages || [];
+    const ok = await confirmDialog({
+      title: `„${f.name}“ löschen?`,
+      message: used.length ? `Die Schrift wird an ${plural(used.length, 'Stelle', 'Stellen')} verwendet und kann erst gelöscht werden, wenn dort eine andere gewählt wurde.` : 'Die Schriftdatei wird endgültig entfernt.',
+      confirmLabel: 'Schrift löschen', danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.del(`/api/fonts/${f.id}`);
+      toast.success(`„${f.name}“ gelöscht.`);
+      loadFontList();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) await showInUse({ title: 'Schrift kann nicht gelöscht werden', message: err.message, usages: err.details?.usages || [] });
+      else toast.error(errorMessage(err));
+    }
+  }
+
   load();
+  loadFontList();
   return () => {};
 }
 
@@ -145,7 +214,7 @@ export function designSketch(cfg = {}, logoUrl = null) {
   const theme = cfg.theme || {};
   const hPct = hd.enabled ? (hd.height || 180) / 19.2 : 0;
   const fPct = ft.enabled ? (ft.height || 96) / 19.2 : 0;
-  return h('span', { class: ['de-sketch', `de-font-${theme.font || 'sans'}`], style: { '--accent': theme.accent_color || '#F5B400' }, 'aria-hidden': 'true' },
+  return h('span', { class: 'de-sketch', style: { '--accent': theme.accent_color || '#F5B400', fontFamily: fontStack(theme.font) || '' }, 'aria-hidden': 'true' },
     hd.enabled ? h('span', { class: ['de-sketch__header', hd.logo_position === 'center' && 'is-center'], style: { height: `${hPct}%`, background: hd.bg_color, color: hd.text_color } },
       logoUrl ? h('img', { src: logoUrl, alt: '' }) : null,
       hd.title ? h('span', { class: 'de-sketch__title' }) : null,

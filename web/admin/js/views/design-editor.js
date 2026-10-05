@@ -1,4 +1,5 @@
-// Design-Editor (#/designs/:id): Header, Footer, Schrift und Akzentfarbe mit Live-Vorschau (Beispielfolie).
+// Design-Editor (#/designs/:id): Header, Footer, Schriften, Typografie-Standard der Info-Folien, Farben/Paletten
+// mit Live-Vorschau (Beispielfolie).
 // Speichern ausdrücklich; danach Hinweis auf betroffene Präsentationen (mit Veröffentlichungsrecht: direkt veröffentlichen).
 import { h, useStyles, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
@@ -19,17 +20,14 @@ import { livePreview } from '../ui/live-preview.js';
 import { affectedPresentations } from '../ui/presentation-actions.js';
 import { editorSave } from '../ui/editor-save.js';
 import { usedBy } from './touch-menus.js';
+import { fontPicker, inheritSelect, paletteRow, loadFonts, WEIGHTS, LINE_HEIGHTS, TRACKINGS, CASES } from '../ui/typography.js';
+import { fontStack } from '/shared/fonts.js';
 
 const SAMPLE = {
   template: 'title_text',
   fields: { title: 'Beispielfolie', subtitle: 'So wirkt der Rahmen', body: 'Header und Footer erscheinen auf allen Folien der Präsentationen, die dieses Design verwenden.', image_content_id: null, date: '', time: '', location: '', items: [] },
   style: { bg_color: '#F4F1EA', text_color: '#111827', accent_color: '#1E5AA8', bg_image_content_id: null, overlay: 0.4, align: 'left', size: 'm' },
 };
-const FONTS = [
-  { value: 'sans', label: 'Serifenlos', sample: 'Klar und modern – gut lesbar auf Distanz' },
-  { value: 'serif', label: 'Mit Serifen', sample: 'Klassisch und ruhig – für Museen, Kultur' },
-  { value: 'condensed', label: 'Schmal', sample: 'Platzsparend – für lange Titel' },
-];
 
 export default async function mount(root, ctx) {
   await Promise.all([useStyles('/admin/css/views/designs.css'), useStyles('/admin/css/views/touch-menus.css'), contentStyles()]);
@@ -41,7 +39,7 @@ export default async function mount(root, ctx) {
   root.append(loadingBlock('Design wird geladen …'));
   let design;
   try {
-    design = await api.get(`/api/designs/${id}`, { signal: ctx.signal });
+    [design] = await Promise.all([api.get(`/api/designs/${id}`, { signal: ctx.signal }), loadFonts(ctx.signal)]);
   } catch (err) {
     if (err?.name === 'AbortError') return undefined;
     fill(root, page({}, pageHeader({ title: 'Design', back: { href: '#/designs', label: 'Designs' } }),
@@ -141,8 +139,11 @@ export default async function mount(root, ctx) {
   function sw(label, obj, key, hint, after = null) {
     return switchToggle({ label, hint, checked: !!obj()[key], disabled: ro, onChange: (v) => { obj()[key] = v; after?.(); changed(); } });
   }
+  const colorEls = []; // für Paletten: Farbfelder nachziehen
   function color(label, obj, key) {
-    return field({ label, control: colorChoice({ label, value: obj()[key], onChange: (v) => { obj()[key] = v; changed(); } }) });
+    const el = colorChoice({ label, value: obj()[key], onChange: (v) => { obj()[key] = v; changed(); } });
+    colorEls.push({ obj, key, el });
+    return field({ label, control: el });
   }
   function seg(label, obj, key, options, hint = null) {
     const s = segmented({ value: obj()[key], ariaLabel: label, options, onChange: (v) => { obj()[key] = v; changed(); } });
@@ -219,29 +220,29 @@ export default async function mount(root, ctx) {
     numField({ label: 'Höhe', value: ft().height, min: 60, max: 240, unit: 'px', hint: '96 px ≈ 5 % der Stelenhöhe.', onValid: (v) => { ft().height = v; changed(); } }));
   const footerSw = switchToggle({ label: 'Footer anzeigen', hint: 'Ausgeschaltet: kein Laufband und kein Text unten.', checked: ft().enabled, disabled: ro, onChange: (v) => { ft().enabled = v; footerDetails.hidden = !v; changed(); } });
 
-  // ---------- Allgemein ----------
-  const fontGroup = h('div', { class: 'de-fonts', role: 'radiogroup', 'aria-label': 'Schrift' });
-  function renderFonts(focus = false) {
-    fill(fontGroup, ...FONTS.map((f) => {
-      const on = cfg.theme.font === f.value;
-      return h('button', { type: 'button', role: 'radio', class: ['de-font', `de-font-${f.value}`], 'aria-checked': String(on), tabindex: on ? '0' : '-1', disabled: ro, dataset: { font: f.value },
-        onClick: () => { cfg.theme.font = f.value; renderFonts(true); changed(); } },
-      h('span', { class: 'de-font__name' }, f.label),
-      h('span', { class: 'de-font__sample' }, f.sample),
-      h('span', { class: 'de-font__digits num' }, 'Aa 0123 10:30'));
-    }));
-    if (focus) fontGroup.querySelector('[aria-checked="true"]')?.focus();
-  }
-  fontGroup.addEventListener('keydown', (e) => {
-    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
-    e.preventDefault();
-    const i = FONTS.findIndex((f) => f.value === cfg.theme.font);
-    const n = (i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + FONTS.length) % FONTS.length;
-    cfg.theme.font = FONTS[n].value;
-    renderFonts(true);
+  // ---------- Allgemein: Farben ----------
+  const th = () => cfg.theme;
+  const accentEl = colorChoice({ label: 'Akzentfarbe', value: th().accent_color, onChange: (v) => { th().accent_color = v; changed(); } });
+  const palettes = paletteRow({ disabled: ro, label: 'Farbpaletten für Header, Footer und Akzent', onPick: (p) => {
+    for (const part of [hd(), ft()]) { part.bg_color = p.bg; part.text_color = p.text; }
+    th().accent_color = p.accent;
+    colorEls.forEach(({ obj, key, el }) => el.setValue(obj()[key]));
+    accentEl.setValue(th().accent_color);
     changed();
-  });
-  renderFonts();
+  } });
+
+  // ---------- Schrift ----------
+  const themeSet = (key) => (v) => { th()[key] = v; changed(); };
+  const bodyFont = fontPicker({ label: 'Schrift für Text', value: th().font, disabled: ro, hint: 'Fließtext der Info-Folien, Footer und Uhr.',
+    onChange: (v) => { th().font = v || 'sans'; headingFont.refreshSample(); changed(); } });
+  const headingFont = fontPicker({ label: 'Schrift für Überschriften', value: th().heading_font, inheritLabel: 'Wie Text', inheritStack: () => fontStack(th().font), disabled: ro,
+    hint: 'Titel der Info-Folien und des Headers.', onChange: themeSet('heading_font') });
+  const typoGrid = h('div', { class: 'ty-grid' },
+    inheritSelect({ label: 'Stärke der Überschriften', value: th().heading_weight, options: WEIGHTS, inheritLabel: 'Standard (Extrafett)', disabled: ro, onChange: themeSet('heading_weight') }),
+    inheritSelect({ label: 'Stärke des Texts', value: th().body_weight, options: WEIGHTS, inheritLabel: 'Standard (Normal)', disabled: ro, onChange: themeSet('body_weight') }),
+    inheritSelect({ label: 'Zeilenabstand', value: th().line_height, options: LINE_HEIGHTS, inheritLabel: 'Standard (1,4)', disabled: ro, onChange: themeSet('line_height') }),
+    inheritSelect({ label: 'Laufweite der Überschriften', value: th().heading_tracking, options: TRACKINGS, inheritLabel: 'Standard (leicht eng)', disabled: ro, onChange: themeSet('heading_tracking') }),
+    inheritSelect({ label: 'Schreibweise der Überschriften', value: th().heading_case, options: CASES, inheritLabel: 'Standard (wie eingegeben)', disabled: ro, onChange: themeSet('heading_case') }));
 
   // ---------- Vorschau ----------
   const pv = livePreview({ title: 'Vorschau des Designs' });
@@ -310,8 +311,11 @@ export default async function mount(root, ctx) {
   formRoot.append(
     card({ title: 'Allgemein', icon: 'settings', body: h('div', { class: 'form' },
       field({ label: 'Name (nur im CMS)', name: 'name', required: true, control: nameIn }),
-      field({ label: 'Schrift', control: fontGroup, hint: 'Gilt für Header, Footer und Info-Folien.' }),
-      field({ label: 'Akzentfarbe', control: colorChoice({ label: 'Akzentfarbe', value: cfg.theme.accent_color, onChange: (v) => { cfg.theme.accent_color = v; changed(); } }), hint: 'Für Fortschrittsbalken, Hervorhebungen und Touch-Menü.' })) }),
+      field({ label: 'Farbpalette', control: palettes, hint: 'Setzt Hintergrund und Text von Header und Footer sowie die Akzentfarbe – danach frei anpassbar.' }),
+      field({ label: 'Akzentfarbe', control: accentEl, hint: 'Für Fortschrittsbalken, Hervorhebungen und Touch-Menü.' })) }),
+    card({ title: 'Schrift', icon: 'type', subtitle: 'Standard für alle Info-Folien – einzelne Folien können abweichen', body: h('div', { class: 'form' },
+      h('div', { class: 'form-row' }, bodyFont, headingFont),
+      typoGrid) }),
     card({ title: 'Header', icon: 'panel-left', body: h('div', { class: 'form' }, headerSw, headerDetails) }),
     card({ title: 'Footer', icon: 'megaphone', body: h('div', { class: 'form' }, footerSw, footerDetails) }),
   );
@@ -328,5 +332,7 @@ export default async function mount(root, ctx) {
   return () => {
     ed.destroy();
     pv.destroy();
+    bodyFont.destroy();
+    headingFont.destroy();
   };
 }

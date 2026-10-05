@@ -1,10 +1,11 @@
-// Info-Folien-Editor (#/media/text/:id, :id = 'new'): Vorlage wählen, Texte und Gestaltung, Live-Vorschau.
+// Info-Folien-Editor (#/media/text/:id, :id = 'new'): Vorlage wählen, Texte, Gestaltung (Farben/Paletten/Verlauf),
+// Schrift und Layout – Feinwerte null = wie Design –, Live-Vorschau.
 import { h, useStyles, mount as fill } from '../dom.js';
 import { icon } from '../icons.js';
 import { api, ApiError, errorMessage } from '../api.js';
 import { can } from '../session.js';
 import { page, pageHeader, card } from '../ui/page.js';
-import { field, input, textarea, select, segmented, tagsInput, setFieldErrors } from '../ui/form.js';
+import { field, input, textarea, select, segmented, switchToggle, tagsInput, setFieldErrors } from '../ui/form.js';
 import { menuButton } from '../ui/menu.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
@@ -14,12 +15,23 @@ import { contentRefField } from '../ui/content-ref.js';
 import { colorChoice, contrastWarning, darken } from '../ui/color-choice.js';
 import { livePreview } from '../ui/live-preview.js';
 import { editorSave } from '../ui/editor-save.js';
+import { fontPicker, inheritSelect, paletteRow, loadFonts, WEIGHTS, LINE_HEIGHTS, TRACKINGS, CASES } from '../ui/typography.js';
+import { fontStack } from '/shared/fonts.js';
 
 const DEFAULT_DATA = {
   template: 'title_text',
   fields: { title: '', subtitle: '', body: '', image_content_id: null, date: '', time: '', location: '', items: [], audience: '', admission: '', qr_url: '', qr_label: '' },
-  style: { bg_color: '#0F2747', text_color: '#FFFFFF', accent_color: '#F5B400', bg_image_content_id: null, overlay: 0.4, align: 'left', size: 'm' },
+  style: {
+    bg_color: '#0F2747', text_color: '#FFFFFF', accent_color: '#F5B400', bg_image_content_id: null, overlay: 0.4, align: 'left', size: 'm',
+    heading_font: null, body_font: null, heading_weight: null, body_weight: null, body_px: null, heading_scale: null, line_height: null,
+    heading_tracking: null, heading_case: null, title_color: null, subtitle_color: null, bg_color2: null, bg_angle: null,
+    padding: null, valign: null, box: null, box_color: null, box_radius: null, rule: null, logo_corner: null,
+  },
 };
+const HEADING_SCALES = [{ value: 1.6, label: 'Klein' }, { value: 1.9, label: 'Mittel' }, { value: 2.4, label: 'Groß' }, { value: 2.9, label: 'Sehr groß' }];
+const ANGLES = [{ value: 180, label: 'Oben → unten' }, { value: 135, label: 'Diagonal' }, { value: 90, label: 'Links → rechts' }, { value: 0, label: 'Unten → oben' }];
+const RADII = [{ value: 0, label: 'Eckig' }, { value: 16, label: 'Leicht gerundet' }, { value: 56, label: 'Stark gerundet' }];
+const CORNERS = [{ value: 'top-left', label: 'Oben links' }, { value: 'top-right', label: 'Oben rechts' }, { value: 'bottom-left', label: 'Unten links' }, { value: 'bottom-right', label: 'Unten rechts' }];
 
 const TEMPLATES = [
   { id: 'title_text', label: TEMPLATE_LABELS.title_text, desc: 'Überschrift mit Fließtext.' },
@@ -67,9 +79,11 @@ export default async function mount(root, ctx) {
   let defaultDesignId = null;
   try {
     const [c, ds, st] = await Promise.all([
+      // Schriften zuerst anmelden (Schriftproben); Fehler → nur mitgelieferte Schriften
       isNew ? Promise.resolve(null) : api.get(`/api/contents/${encodeURIComponent(ctx.params.id)}`, { signal: ctx.signal }),
       can('presentations.view') ? api.get('/api/designs', { signal: ctx.signal }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
       api.get('/api/settings', { signal: ctx.signal }).catch(() => ({})),
+      loadFonts(ctx.signal),
     ]);
     content = c;
     designs = ds.items || [];
@@ -263,8 +277,69 @@ export default async function mount(root, ctx) {
     onChange: (id) => { s.bg_image_content_id = id; overlayField.hidden = !id; changed(); },
   });
   const alignSeg = segmented({ value: s.align, ariaLabel: 'Ausrichtung', options: [{ value: 'left', label: 'Links' }, { value: 'center', label: 'Zentriert' }], onChange: (v) => { s.align = v; changed(); } });
-  const sizeSeg = segmented({ value: s.size, ariaLabel: 'Schriftgröße', options: [{ value: 's', label: 'Klein' }, { value: 'm', label: 'Mittel' }, { value: 'l', label: 'Groß' }], onChange: (v) => { s.size = v; changed(); } });
-  if (ro) for (const b of [...alignSeg.querySelectorAll('button'), ...sizeSeg.querySelectorAll('button'), ...bgColor.querySelectorAll('input,button'), ...textColor.querySelectorAll('input,button'), ...accentColor.querySelectorAll('input,button')]) b.disabled = true;
+  const sizeSeg = segmented({ value: s.body_px === null ? s.size : 'custom', ariaLabel: 'Schriftgröße', options: [{ value: 's', label: 'Klein' }, { value: 'm', label: 'Mittel' }, { value: 'l', label: 'Groß' }, { value: 'custom', label: 'Eigene' }],
+    onChange: (v) => {
+      if (v === 'custom') { s.body_px = Number(pxIn.value); } else { s.size = v; s.body_px = null; }
+      pxField.hidden = v !== 'custom';
+      changed();
+    } });
+  const set = (key) => (v) => { s[key] = v; changed(); };
+  const designTheme = () => designConfig()?.theme || {};
+
+  // Paletten und Verlauf
+  const bg2Color = colorChoice({ label: 'Zweite Verlaufsfarbe', value: s.bg_color2 || s.bg_color, onChange: (v) => { s.bg_color2 = v; changed(); } });
+  const gradBox = h('div', { class: 'form-row' },
+    field({ label: 'Zweite Farbe', name: 'style.bg_color2', control: bg2Color }),
+    inheritSelect({ label: 'Richtung', value: s.bg_angle, options: ANGLES, inheritLabel: 'Oben → unten (Standard)', disabled: ro, onChange: set('bg_angle') }));
+  gradBox.hidden = !s.bg_color2;
+  const gradSw = switchToggle({ label: 'Farbverlauf', hint: 'Hintergrund läuft von der Hintergrundfarbe in eine zweite Farbe.', checked: !!s.bg_color2, disabled: ro,
+    onChange: (v) => { s.bg_color2 = v ? bg2Color.getValue() : null; gradBox.hidden = !v; changed(); } });
+  const palettes = paletteRow({ disabled: ro, onPick: (p) => {
+    Object.assign(s, { bg_color: p.bg, text_color: p.text, accent_color: p.accent, bg_color2: p.bg2 || null, title_color: null, subtitle_color: null });
+    bgColor.setValue(p.bg); textColor.setValue(p.text); accentColor.setValue(p.accent);
+    if (p.bg2) bg2Color.setValue(p.bg2);
+    gradSw.querySelector('input').checked = !!p.bg2;
+    gradBox.hidden = !p.bg2;
+    titleColor.reset(); subtitleColor.reset();
+    changed();
+  } });
+
+  // Optionale Farbe: aus = erbt (Überschrift wie Text, Unterzeile wie Akzent)
+  function optionalColor({ label, key, offHint, fallback }) {
+    const choice = colorChoice({ label, value: s[key] || fallback(), onChange: (v) => { s[key] = v; changed(); } });
+    const box = field({ label, name: `style.${key}`, control: choice });
+    box.hidden = !s[key];
+    const sw = switchToggle({ label: `Eigene ${label}`, hint: offHint, checked: !!s[key], disabled: ro,
+      onChange: (v) => { s[key] = v ? choice.getValue() : null; box.hidden = !v; changed(); } });
+    const el = h('div', { class: 'stack stack--sm' }, sw, box);
+    el.reset = () => { sw.querySelector('input').checked = false; box.hidden = true; choice.setValue(fallback()); };
+    return el;
+  }
+  const titleColor = optionalColor({ label: 'Farbe der Überschrift', key: 'title_color', offHint: 'Aus: wie Textfarbe.', fallback: () => s.text_color });
+  const subtitleColor = optionalColor({ label: 'Farbe der Unterzeile', key: 'subtitle_color', offHint: 'Aus: wie Akzentfarbe.', fallback: () => s.accent_color });
+
+  // Schrift
+  const designFont = (k) => () => fontStack(designTheme()[k]) || fontStack(designTheme().font) || fontStack('sans');
+  const headingFont = fontPicker({ label: 'Schrift für Überschriften', value: s.heading_font, inheritLabel: 'Wie Design', inheritStack: designFont('heading_font'), disabled: ro, onChange: set('heading_font') });
+  const bodyFont = fontPicker({ label: 'Schrift für Text', value: s.body_font, inheritLabel: 'Wie Design', inheritStack: designFont('font'), disabled: ro, onChange: set('body_font') });
+  const pxOut = h('output', {}, `${s.body_px || 48} px`);
+  const pxIn = h('input', { type: 'range', min: '28', max: '96', step: '2', value: String(s.body_px || 48), disabled: ro, 'aria-label': 'Eigene Schriftgröße des Texts' });
+  pxIn.addEventListener('input', () => { s.body_px = Number(pxIn.value); pxOut.textContent = `${pxIn.value} px`; changed(); });
+  const pxField = field({ label: 'Eigene Größe', name: 'style.body_px', hint: 'Fließtext auf der 1080 px breiten Stele; ab 40 px gut lesbar aus 3–5 m.', control: h('div', { class: 'cu-range' }, pxIn, pxOut) });
+  pxField.hidden = s.body_px === null;
+
+  // Layout
+  const boxColor = optionalColor({ label: 'Farbe des Textfelds', key: 'box_color', offHint: 'Aus: etwas dunkler als der Hintergrund.', fallback: () => s.bg_color });
+  const boxDetails = h('div', { class: 'stack' }, boxColor,
+    inheritSelect({ label: 'Ecken des Textfelds', value: s.box_radius, options: RADII, inheritLabel: 'Gerundet (Standard)', disabled: ro, onChange: set('box_radius') }));
+  boxDetails.hidden = !s.box || s.box === 'none';
+  const boxSeg = segmented({ value: s.box || 'none', ariaLabel: 'Textfeld', options: [{ value: 'none', label: 'Ohne' }, { value: 'solid', label: 'Fläche' }, { value: 'glass', label: 'Milchglas' }],
+    onChange: (v) => { s.box = v === 'none' ? null : v; boxDetails.hidden = !s.box; changed(); } });
+  const valignSeg = segmented({ value: s.valign || 'center', ariaLabel: 'Senkrechte Ausrichtung', options: [{ value: 'top', label: 'Oben' }, { value: 'center', label: 'Mitte' }, { value: 'bottom', label: 'Unten' }],
+    onChange: (v) => { s.valign = v === 'center' ? null : v; changed(); } });
+  const ruleSw = switchToggle({ label: 'Akzentlinie anzeigen', hint: 'Linie über der Überschrift bzw. unter dem Bild.', checked: s.rule !== false, disabled: ro, onChange: (v) => { s.rule = v ? null : false; changed(); } });
+
+  if (ro) for (const b of [...alignSeg.querySelectorAll('button'), ...sizeSeg.querySelectorAll('button'), ...boxSeg.querySelectorAll('button'), ...valignSeg.querySelectorAll('button'), ...bgColor.querySelectorAll('input,button'), ...textColor.querySelectorAll('input,button'), ...accentColor.querySelectorAll('input,button')]) b.disabled = true;
 
   // ---------- Vorschau ----------
   const pv = livePreview({ title: 'Vorschau der Info-Folie' });
@@ -274,7 +349,7 @@ export default async function mount(root, ctx) {
   const designSel = select({
     value: designId === null ? '' : String(designId), 'aria-label': 'Rahmen für die Vorschau',
     options: [{ value: '', label: 'Ohne Header und Footer' }, ...designs.map((d) => ({ value: String(d.id), label: d.name }))],
-    onChange: (v) => { designId = v ? Number(v) : null; refreshPreview(); },
+    onChange: (v) => { designId = v ? Number(v) : null; headingFont.refreshSample(); bodyFont.refreshSample(); refreshPreview(); },
   });
 
   function refreshPreview(now = false) {
@@ -296,10 +371,14 @@ export default async function mount(root, ctx) {
   }
 
   function updateContrast() {
+    const surface = s.box === 'solid' && s.box_color ? s.box_color : s.bg_color;
     const pairs = [
-      { fg: s.text_color, bg: s.bg_color, label: 'Text auf Hintergrundfarbe' },
-      { fg: s.accent_color, bg: s.bg_color, label: 'Akzentfarbe auf Hintergrund (Linien, Symbole)', min: 3 },
+      { fg: s.text_color, bg: surface, label: 'Text auf Hintergrundfarbe' },
+      { fg: s.accent_color, bg: surface, label: 'Akzentfarbe auf Hintergrund (Linien, Symbole)', min: 3 },
     ];
+    if (s.title_color) pairs.push({ fg: s.title_color, bg: surface, label: 'Überschrift auf Hintergrund', min: 3 });
+    if (s.subtitle_color) pairs.push({ fg: s.subtitle_color, bg: surface, label: 'Unterzeile auf Hintergrund' });
+    if (s.bg_color2 && !(s.box === 'solid' && s.box_color)) pairs.push({ fg: s.text_color, bg: s.bg_color2, label: 'Text auf zweiter Verlaufsfarbe' });
     if (s.bg_image_content_id) pairs.push({ fg: s.text_color, bg: darken('#8A8A8A', s.overlay), label: 'Text auf abgedunkeltem Hintergrundbild (Schätzung)' });
     contrast.update(pairs);
   }
@@ -362,17 +441,41 @@ export default async function mount(root, ctx) {
       field({ label: 'Adresse', name: 'fields.qr_url', optional: true, hint: 'Leer = kein QR-Code. Kurze Adressen ergeben einen gröberen, besser scanbaren Code.', control: qrUrlIn }),
       field({ label: 'Beschriftung', name: 'fields.qr_label', optional: true, hint: 'z. B. „Jetzt anmelden“', control: qrLabelIn })) }),
     card({ title: 'Gestaltung', icon: 'palette', body: h('div', { class: 'form' },
+      field({ label: 'Farbpalette', control: palettes, hint: 'Übernimmt Hintergrund, Text, Akzent und ggf. Verlauf – danach frei anpassbar.' }),
       h('div', { class: 'ts-colors' },
         field({ label: 'Hintergrundfarbe', name: 'style.bg_color', control: bgColor }),
         field({ label: 'Textfarbe', name: 'style.text_color', control: textColor }),
         field({ label: 'Akzentfarbe', name: 'style.accent_color', hint: 'Linie, Symbole und Aufzählungspunkte.', control: accentColor })),
+      gradSw, gradBox,
+      h('div', { class: 'form-row' }, titleColor, subtitleColor),
       contrast,
       field({ label: 'Hintergrundbild', name: 'style.bg_image_content_id', optional: true, control: bgImage }),
-      overlayField,
+      overlayField) }),
+    card({ title: 'Schrift', icon: 'type', subtitle: '„Wie Design“ übernimmt die Schrift-Einstellungen des Designs der Präsentation', body: h('div', { class: 'form' },
+      h('div', { class: 'form-row' }, headingFont, bodyFont),
+      h('div', { class: 'form-row' },
+        field({ label: 'Schriftgröße', name: 'style.size', hint: 'Für 3–5 m Abstand „Mittel“ oder „Groß“. Lange Texte werden automatisch verkleinert.', control: sizeSeg }),
+        pxField),
+      h('div', { class: 'ty-grid' },
+        inheritSelect({ label: 'Größe der Überschrift', value: s.heading_scale, options: HEADING_SCALES, inheritLabel: 'Standard der Vorlage', disabled: ro, onChange: set('heading_scale') }),
+        inheritSelect({ label: 'Stärke der Überschrift', value: s.heading_weight, options: WEIGHTS, inheritLabel: 'Wie Design', disabled: ro, onChange: set('heading_weight') }),
+        inheritSelect({ label: 'Stärke des Texts', value: s.body_weight, options: WEIGHTS, inheritLabel: 'Wie Design', disabled: ro, onChange: set('body_weight') }),
+        inheritSelect({ label: 'Zeilenabstand', value: s.line_height, options: LINE_HEIGHTS, inheritLabel: 'Wie Design', disabled: ro, onChange: set('line_height') }),
+        inheritSelect({ label: 'Laufweite der Überschrift', value: s.heading_tracking, options: TRACKINGS, inheritLabel: 'Wie Design', disabled: ro, onChange: set('heading_tracking') }),
+        inheritSelect({ label: 'Schreibweise der Überschrift', value: s.heading_case, options: CASES, inheritLabel: 'Wie Design', disabled: ro, onChange: set('heading_case') }))) }),
+    card({ title: 'Layout', icon: 'grid', body: h('div', { class: 'form' },
       h('div', { class: 'form-row' },
         field({ label: 'Ausrichtung', name: 'style.align', control: alignSeg }),
-        field({ label: 'Schriftgröße', name: 'style.size', hint: 'Für 3–5 m Abstand „Mittel“ oder „Groß“. Lange Texte werden automatisch verkleinert.', control: sizeSeg }))) }),
+        field({ label: 'Senkrechte Lage', name: 'style.valign', hint: 'Bei langen Texten beginnt der Text immer oben.', control: valignSeg })),
+      h('div', { class: 'form-row' },
+        inheritSelect({ label: 'Innenabstand', value: s.padding, options: [{ value: 's', label: 'Schmal' }, { value: 'l', label: 'Breit' }], inheritLabel: 'Standard', disabled: ro, onChange: set('padding') }),
+        inheritSelect({ label: 'Logo in der Ecke', value: s.logo_corner, options: CORNERS, inheritLabel: 'Kein Logo', hint: 'Zeigt das Logo aus dem Design der Präsentation.', disabled: ro, onChange: set('logo_corner') })),
+      field({ label: 'Textfeld', name: 'style.box', hint: 'Fläche hinter dem Text – hilft bei Hintergrundbildern.', control: boxSeg }),
+      boxDetails,
+      ruleSw) }),
   );
+
+  if (ro) for (const el of formRoot.querySelectorAll('.cu-color input, .cu-color button')) el.disabled = true;
 
   const previewCard = card({
     title: 'Vorschau', icon: 'eye', className: 'ts-preview',
@@ -395,6 +498,8 @@ export default async function mount(root, ctx) {
   return () => {
     ed.destroy();
     pv.destroy();
+    headingFont.destroy();
+    bodyFont.destroy();
   };
 }
 

@@ -20,6 +20,7 @@ export const ENTITY_TYPES = {
   presentation: { label: 'Präsentation', icon: 'presentation' },
   design: { label: 'Design', icon: 'palette' },
   touch_menu: { label: 'Touch-Menü', icon: 'touch' },
+  font: { label: 'Schrift', icon: 'type' },
   stele: { label: 'Stele', icon: 'stele' },
   schedule: { label: 'Zeitplan', icon: 'calendar-clock' },
   settings: { label: 'Einstellungen', icon: 'settings' },
