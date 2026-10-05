@@ -7,19 +7,16 @@ from .. import appsettings, schemas, timeutil
 from .. import auth as authm
 from .. import db as dbm
 from ..audit import audit, q
-from ..errors import conflict
 from ..permissions import require
 from ..resolve import Resolver
 from ..validation import Validator, body, is_int
-from .common import check_unchanged, get_or_404, list_response, ok
+from .common import get_or_404, in_use_conflict, list_response, ok, presentations_using, save_named
 
 bp = Blueprint("api_designs", __name__, url_prefix="/api/designs")
 
 
 def used_by(conn, resolver: Resolver, design_id: int) -> list[dict]:
-    return [{"id": p["id"], "name": p["name"], "status": resolver.status(p)}
-            for p in dbm.rows(conn, "SELECT * FROM presentations WHERE design_id = ? ORDER BY name COLLATE NOCASE",
-                              (design_id,))]
+    return presentations_using(conn, resolver, "design_id", design_id)
 
 
 def serialize(conn, r: dict, resolver: Resolver | None = None) -> dict:
@@ -93,17 +90,7 @@ def update_design(did: int):
         changes["name"] = name
     if cfg is not None and cfg != old_cfg:
         changes["config"] = dbm.jdumps(cfg)
-    with dbm.transaction(conn):
-        check_unchanged(conn, "designs", did, data, f"Das Design {q(r['name'])}")
-        if changes:
-            user = authm.current_user()
-            fields = sorted(changes)
-            changes.update({"updated_at": timeutil.now_iso(), "updated_by": user["id"]})
-            dbm.update(conn, "designs", did, changes)
-            label = name or r["name"]
-            summary = (f"hat das Design {q(r['name'])} in {q(name)} umbenannt" if fields == ["name"]
-                       else f"hat das Design {q(label)} bearbeitet")
-            audit(conn, "update", "design", summary, entity_id=did, entity_name=label, details={"fields": fields})
+    save_named(conn, "designs", "design", "das Design", r, data, changes)
     return jsonify(serialize(conn, get_or_404(conn, "designs", did)))
 
 
@@ -114,10 +101,7 @@ def delete_design(did: int):
     r = get_or_404(conn, "designs", did)
     users = used_by(conn, Resolver(conn), did)
     if users:
-        n = len(users)
-        raise conflict(f"Das Design {q(r['name'])} wird noch von {n} Präsentation{'en' if n != 1 else ''} "
-                       "verwendet. Bitte dort zuerst ein anderes Design wählen.", "in_use",
-                       {"usages": [{"type": "presentation", "id": u["id"], "name": u["name"]} for u in users]})
+        raise in_use_conflict(f"Das Design {q(r['name'])}", users, "ein anderes Design")
     with dbm.transaction(conn):
         conn.execute("DELETE FROM designs WHERE id = ?", (did,))
         if appsettings.get_settings(conn)["default_design_id"] == did:

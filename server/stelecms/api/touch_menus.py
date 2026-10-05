@@ -7,20 +7,17 @@ from .. import schemas, timeutil
 from .. import auth as authm
 from .. import db as dbm
 from ..audit import audit, q
-from ..errors import conflict
 from ..media import content_brief
 from ..permissions import require
 from ..resolve import Resolver
 from ..validation import Validator, body, is_int
-from .common import check_unchanged, get_or_404, list_response, ok
+from .common import get_or_404, in_use_conflict, list_response, ok, presentations_using, save_named
 
 bp = Blueprint("api_touch_menus", __name__, url_prefix="/api/touch-menus")
 
 
 def used_by(conn, resolver: Resolver, menu_id: int) -> list[dict]:
-    return [{"id": p["id"], "name": p["name"], "status": resolver.status(p)}
-            for p in dbm.rows(conn, "SELECT * FROM presentations WHERE touch_menu_id = ? "
-                                    "ORDER BY name COLLATE NOCASE", (menu_id,))]
+    return presentations_using(conn, resolver, "touch_menu_id", menu_id)
 
 
 def _decorate(tiles: list, resolver: Resolver) -> list:
@@ -115,18 +112,7 @@ def update_menu(mid: int):
         changes["name"] = name
     if cfg is not None and cfg != old_cfg:
         changes["config"] = dbm.jdumps(cfg)
-    with dbm.transaction(conn):
-        check_unchanged(conn, "touch_menus", mid, data, f"Das Touch-Menü {q(r['name'])}")
-        if changes:
-            user = authm.current_user()
-            fields = sorted(changes)
-            changes.update({"updated_at": timeutil.now_iso(), "updated_by": user["id"]})
-            dbm.update(conn, "touch_menus", mid, changes)
-            label = name or r["name"]
-            summary = (f"hat das Touch-Menü {q(r['name'])} in {q(name)} umbenannt" if fields == ["name"]
-                       else f"hat das Touch-Menü {q(label)} bearbeitet")
-            audit(conn, "update", "touch_menu", summary, entity_id=mid, entity_name=label,
-                  details={"fields": fields})
+    save_named(conn, "touch_menus", "touch_menu", "das Touch-Menü", r, data, changes)
     return jsonify(serialize(conn, get_or_404(conn, "touch_menus", mid)))
 
 
@@ -137,10 +123,7 @@ def delete_menu(mid: int):
     r = get_or_404(conn, "touch_menus", mid)
     users = used_by(conn, Resolver(conn), mid)
     if users:
-        n = len(users)
-        raise conflict(f"Das Touch-Menü {q(r['name'])} wird noch von {n} Präsentation{'en' if n != 1 else ''} "
-                       "verwendet. Bitte dort zuerst ein anderes Touch-Menü wählen.", "in_use",
-                       {"usages": [{"type": "presentation", "id": u["id"], "name": u["name"]} for u in users]})
+        raise in_use_conflict(f"Das Touch-Menü {q(r['name'])}", users, "ein anderes Touch-Menü")
     with dbm.transaction(conn):
         conn.execute("DELETE FROM touch_menus WHERE id = ?", (mid,))
         audit(conn, "delete", "touch_menu", f"hat das Touch-Menü {q(r['name'])} gelöscht", entity_id=mid,

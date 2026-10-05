@@ -4,7 +4,9 @@ from __future__ import annotations
 from flask import jsonify, request
 
 from .. import db as dbm
-from ..auth import person
+from .. import timeutil
+from ..audit import audit, q
+from ..auth import current_user, person
 from ..errors import ApiError, conflict, not_found
 
 NOT_FOUND_MSGS = {
@@ -44,6 +46,39 @@ def check_unchanged(conn, table: str, row_id: int, data: dict, label: str) -> No
     by = f" von {who['display_name']}" if who else ""
     raise conflict(f"{label} wurde inzwischen{by} geändert – bitte neu laden.", "edit_conflict",
                    {"updated_at": r["updated_at"], "updated_by": who})
+
+
+def presentations_using(conn, resolver, column: str, row_id: int) -> list[dict]:
+    """Präsentationen, die ein Design bzw. Touch-Menü verwenden (`column` nur aus dem Code)."""
+    return [{"id": p["id"], "name": p["name"], "status": resolver.status(p)}
+            for p in dbm.rows(conn, f"SELECT * FROM presentations WHERE {column} = ? ORDER BY name COLLATE NOCASE",
+                              (row_id,))]
+
+
+def in_use_conflict(subject: str, users: list[dict], alternative: str) -> ApiError:
+    """409 `in_use` beim Löschen: „<subject> wird noch von n Präsentationen verwendet …“."""
+    n = len(users)
+    return conflict(f"{subject} wird noch von {n} Präsentation{'en' if n != 1 else ''} "
+                    f"verwendet. Bitte dort zuerst {alternative} wählen.", "in_use",
+                    {"usages": [{"type": "presentation", "id": u["id"], "name": u["name"]} for u in users]})
+
+
+def save_named(conn, table: str, entity: str, noun: str, r: dict, data: dict, changes: dict) -> None:
+    """PATCH mit Name + Konfiguration (Designs, Touch-Menüs): Bearbeitungskonflikt prüfen, speichern, protokollieren.
+
+    noun klein wie im Protokollsatz („das Design“); reine Namensänderung → „… in „Neu“ umbenannt“.
+    """
+    rid = r["id"]
+    with dbm.transaction(conn):
+        check_unchanged(conn, table, rid, data, f"{noun[0].upper()}{noun[1:]} {q(r['name'])}")
+        if not changes:
+            return
+        fields = sorted(changes)
+        label = changes.get("name", r["name"])
+        dbm.update(conn, table, rid, {**changes, "updated_at": timeutil.now_iso(), "updated_by": current_user()["id"]})
+        summary = (f"hat {noun} {q(r['name'])} in {q(label)} umbenannt" if fields == ["name"]
+                   else f"hat {noun} {q(label)} bearbeitet")
+        audit(conn, "update", entity, summary, entity_id=rid, entity_name=label, details={"fields": fields})
 
 
 def list_response(items: list, total: int | None = None, **extra):

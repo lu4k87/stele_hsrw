@@ -39,6 +39,24 @@ def test_design_delete_in_use(admin):
     assert d["used_by"] == [{"id": p["id"], "name": "P", "status": "draft"}]
 
 
+def test_rename_audit_and_in_use_touch_menu(admin):
+    """Gemeinsame Helfer (common.save_named, in_use_conflict) für Designs und Touch-Menüs."""
+    m = admin.post("/api/touch-menus", json={"name": "Alt"}).get_json()
+    admin.patch(f"/api/touch-menus/{m['id']}", json={"name": "Neu"})
+    admin.patch(f"/api/touch-menus/{m['id']}", json={"name": "Neu", "config": {"title": "Hallo"}})
+    summaries = [e["summary"] for e in admin.get("/api/audit?entity_type=touch_menu&action=update").get_json()["items"]]
+    assert any(s.endswith("hat das Touch-Menü „Alt“ in „Neu“ umbenannt") for s in summaries)
+    assert any(s.endswith("hat das Touch-Menü „Neu“ bearbeitet") for s in summaries)
+    p = make_presentation(admin, "P")
+    assert admin.patch(f"/api/presentations/{p['id']}", json={"touch_menu_id": m["id"]}).status_code == 200
+    r = admin.delete(f"/api/touch-menus/{m['id']}")
+    err = r.get_json()["error"]
+    assert r.status_code == 409 and err["code"] == "in_use"
+    assert err["message"] == ("Das Touch-Menü „Neu“ wird noch von 1 Präsentation verwendet. "
+                              "Bitte dort zuerst ein anderes Touch-Menü wählen.")
+    assert err["details"]["usages"] == [{"type": "presentation", "id": p["id"], "name": "P"}]
+
+
 def test_touch_menu_crud(admin):
     img = make_image(admin)
     txt = make_text(admin)
