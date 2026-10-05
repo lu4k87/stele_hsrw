@@ -190,7 +190,7 @@ def cleanup(conn, cfg) -> dict:
     # Medien-Ordner ohne Inhalt (Absturz zwischen Verschieben und Anlegen, gescheitertes Löschen)
     media_dir = Path(cfg["MEDIA_DIR"])
     if media_dir.is_dir():
-        uids = {r["uid"] for r in conn.execute("SELECT uid FROM contents")}
+        uids = {r["uid"] for r in conn.execute("SELECT uid FROM contents UNION SELECT uid FROM fonts")}
         limit = time.time() - 24 * 3600
         removed = 0
         for d in media_dir.iterdir():

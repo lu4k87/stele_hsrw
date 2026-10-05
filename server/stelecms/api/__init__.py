@@ -5,9 +5,9 @@ from flask import Flask
 
 
 def register_blueprints(app: Flask) -> None:
-    from . import (agent, audit, auth, contents, dashboard, designs, monitoring, player, presentations, roles,
+    from . import (agent, audit, auth, contents, dashboard, designs, fonts, monitoring, player, presentations, roles,
                    schedule, settings, steles, touch_menus, users)
 
-    for mod in (auth, users, roles, contents, presentations, designs, touch_menus, steles, schedule, monitoring,
+    for mod in (auth, users, roles, contents, presentations, designs, fonts, touch_menus, steles, schedule, monitoring,
                 dashboard, audit, settings, player, agent):
         app.register_blueprint(mod.bp)

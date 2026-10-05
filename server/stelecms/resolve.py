@@ -6,6 +6,7 @@ import hashlib
 
 from . import appsettings, schemas, timeutil
 from . import db as dbm
+from . import fonts as fontsm
 from .media import content_urls
 from .validation import is_int
 
@@ -162,7 +163,7 @@ class Resolver:
             fields = {k: v for k, v in d["fields"].items()
                       if k not in schemas.TEXT_OPTIONAL_FIELDS or v}
             fields["image_url"] = self.image_url(fields.get("image_content_id"))
-            style = dict(d["style"])
+            style = {k: v for k, v in d["style"].items() if k not in schemas.TEXT_STYLE_OPTIONAL or v is not None}
             style["bg_image_url"] = self.image_url(style.get("bg_image_content_id"))
             s.update({"template": d["template"], "fields": fields, "style": style})
         elif t == "web":
@@ -178,8 +179,18 @@ class Resolver:
         if not r:
             return None
         cfg = schemas.merge_defaults(schemas.DESIGN_CONFIG, dbm.jloads(r["config"], {}))
+        return self.design_out(cfg)
+
+    def design_out(self, cfg: dict) -> dict:
+        """Design fürs Manifest: Logo-URL dazu, unbelegte neue Theme-Felder weg (Status-Hash bleibt gleich)."""
+        cfg["theme"] = {k: v for k, v in cfg["theme"].items()
+                        if k not in schemas.DESIGN_THEME_OPTIONAL or v is not None}
         cfg["logo_url"] = self.image_url(cfg["header"].get("logo_content_id"))
         return cfg
+
+    def fonts(self, obj) -> dict:
+        """Hochgeladene Schriften, auf die `obj` (Präsentationen, Vorschau) verweist."""
+        return fontsm.fonts_map(self.conn, fontsm.font_refs(obj))
 
     def _touch_slide(self, cid, settings) -> dict | None:
         c = self.content(cid)
@@ -291,7 +302,8 @@ class Resolver:
             "schedule": schedule,
             "presentations": presentations,
             "feeds": self.feeds(presentations.values()),
-            "assets": collect_assets(presentations),
+            "fonts": (fonts := self.fonts(presentations)),
+            "assets": collect_assets([presentations, fonts]),
         }
         finalize_manifest(manifest)
         self._manifests[stele["id"]] = manifest
@@ -309,7 +321,8 @@ class Resolver:
             "schema": MANIFEST_SCHEMA, "version": "", "generated_at": timeutil.now_iso(), "preview": True,
             "timezone": self.settings["timezone"], "org_name": self.settings["org_name"], "stele": None,
             "default_presentation_id": p["id"], "schedule": [], "presentations": presentations,
-            "feeds": self.feeds(presentations.values()), "assets": collect_assets(presentations),
+            "feeds": self.feeds(presentations.values()), "fonts": (fonts := self.fonts(presentations)),
+            "assets": collect_assets([presentations, fonts]),
         }
         return finalize_manifest(manifest)
 

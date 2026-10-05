@@ -322,9 +322,7 @@ def preview_resolve():
         data.get("settings"), dict) else None, scratch)
     design = None
     if isinstance(data.get("design"), dict):
-        cfg = schemas.normalize_design_config(conn, None, data["design"], Validator({}))
-        cfg["logo_url"] = resolver.image_url(cfg["header"].get("logo_content_id"))
-        design = cfg
+        design = resolver.design_out(schemas.normalize_design_config(conn, None, data["design"], Validator({})))
     touch_menu = None
     if isinstance(data.get("touch_menu"), dict):
         cfg = schemas.normalize_touch_config(conn, None, data["touch_menu"], Validator({}))
@@ -352,7 +350,9 @@ def preview_resolve():
                 s["status"] = c["status"]
         s["enabled"] = enabled
         slides.append(s)
-    return jsonify({"settings": settings, "design": design, "touch_menu": touch_menu, "slides": slides})
+    out = {"settings": settings, "design": design, "touch_menu": touch_menu, "slides": slides}
+    out["fonts"] = resolver.fonts(out)
+    return jsonify(out)
 
 
 def _preview_content(conn, resolver: Resolver, it: dict) -> dict | None:

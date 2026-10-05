@@ -10,6 +10,7 @@ import re
 import secrets
 
 from . import db as dbm
+from . import fonts as fontsm
 from .config import WEB_DIR
 from .validation import Validator, is_int
 
@@ -39,8 +40,20 @@ TEXT_DATA = {
                "date": "", "time": "", "location": "", "items": [],
                "audience": "", "admission": "", "qr_url": "", "qr_label": ""},
     "style": {"bg_color": "#0F2747", "text_color": "#FFFFFF", "accent_color": "#F5B400",
-              "bg_image_content_id": None, "overlay": 0.4, "align": "left", "size": "m"},
+              "bg_image_content_id": None, "overlay": 0.4, "align": "left", "size": "m",
+              # Feingestaltung (null = wie Design bzw. Standard der Vorlage), siehe TEXT_STYLE_OPTIONAL
+              "heading_font": None, "body_font": None, "heading_weight": None, "body_weight": None,
+              "body_px": None, "heading_scale": None, "line_height": None, "heading_tracking": None,
+              "heading_case": None, "title_color": None, "subtitle_color": None,
+              "bg_color2": None, "bg_angle": None, "padding": None, "valign": None,
+              "box": None, "box_color": None, "box_radius": None, "rule": None, "logo_corner": None},
 }
+# Neue Stil-Felder: null → nicht in der aufgelösten Folie (Status-Hash veröffentlichter Stände bleibt gleich)
+TEXT_STYLE_OPTIONAL = ("heading_font", "body_font", "heading_weight", "body_weight", "body_px", "heading_scale",
+                       "line_height", "heading_tracking", "heading_case", "title_color", "subtitle_color",
+                       "bg_color2", "bg_angle", "padding", "valign", "box", "box_color", "box_radius", "rule",
+                       "logo_corner")
+FONT_WEIGHTS = (100, 200, 300, 400, 500, 600, 700, 800, 900)
 # Neue optionale Felder: leer → nicht im Manifest (veröffentlichte Stände bleiben unverändert)
 TEXT_OPTIONAL_FIELDS = ("audience", "admission", "qr_url", "qr_label")
 QR_URL_MAX = 500
@@ -55,8 +68,13 @@ DESIGN_CONFIG = {
     "footer": {"enabled": True, "height": 96, "bg_color": "#0F2747", "text_color": "#FFFFFF",
                "mode": "ticker", "text": "", "ticker_items": [], "ticker_rss_url": "",
                "ticker_speed": 120, "ticker_separator": "•"},
-    "theme": {"font": "sans", "accent_color": "#F5B400"},
+    "theme": {"font": "sans", "accent_color": "#F5B400",
+              # Standard für Info-Folien (null = Standard der Vorlage), siehe DESIGN_THEME_OPTIONAL
+              "heading_font": None, "heading_weight": None, "body_weight": None, "line_height": None,
+              "heading_tracking": None, "heading_case": None},
 }
+DESIGN_THEME_OPTIONAL = ("heading_font", "heading_weight", "body_weight", "line_height", "heading_tracking",
+                         "heading_case")
 
 TOUCH_CONFIG = {
     "title": "Informationen", "intro": "Bitte ein Thema wählen", "columns": 2, "idle_timeout_s": 60,
@@ -105,6 +123,41 @@ def _content_ref(conn, v: Validator, key: str, value, types=("image",), label: s
         v.error(key, f"Bitte ein {label} aus der Mediathek wählen.")
         return None
     return value
+
+
+def _font_ref(conn, v: Validator, key: str, default, *, allow_none: bool = True):
+    """Schrift-Schlüssel: mitgeliefert (web/shared/fonts.js) oder hochgeladen (`custom-<id>`)."""
+    if key not in v.data:
+        return default
+    value = v.data[key]
+    if value is None:
+        return None if allow_none else default
+    if value in fontsm.builtin_keys():
+        return value
+    fid = fontsm.custom_id(value)
+    if fid is not None and dbm.scalar(conn, "SELECT 1 FROM fonts WHERE id = ?", (fid,)):
+        return value
+    v.error(key, "Bitte eine Schrift aus der Liste wählen.")
+    return default
+
+
+def _opt(v: Validator, key: str, default, read):
+    """Optionaler Wert: ausdrücklich null → zurück auf „erben“; sonst Prüfung per `read(default)`."""
+    if key in v.data and v.data[key] is None:
+        return None
+    return read(default)
+
+
+def _typography(conn, v: Validator, d: dict) -> None:
+    """Gemeinsame Typografie-Felder von Design (`theme`) und Info-Folie (`style`)."""
+    d["heading_font"] = _font_ref(conn, v, "heading_font", d["heading_font"])
+    for key in ("heading_weight", "body_weight"):
+        d[key] = v.choice(key, FONT_WEIGHTS, default=d[key], allow_none=True)
+    d["line_height"] = v.number("line_height", min_value=1.0, max_value=2.0, default=d["line_height"],
+                                allow_none=True)
+    d["heading_tracking"] = v.number("heading_tracking", min_value=-0.05, max_value=0.25,
+                                     default=d["heading_tracking"], allow_none=True)
+    d["heading_case"] = v.choice("heading_case", ("none", "upper"), default=d["heading_case"], allow_none=True)
 
 
 # --------------------------------------------------- Diashow-Einstellungen
@@ -232,6 +285,24 @@ def normalize_text_data(conn, base, patch, v: Validator) -> dict:
         style["overlay"] = st.number("overlay", min_value=0, max_value=0.8, default=style["overlay"])
         style["align"] = st.choice("align", ("left", "center"), default=style["align"])
         style["size"] = st.choice("size", ("s", "m", "l"), default=style["size"])
+        _typography(conn, st, style)
+        style["body_font"] = _font_ref(conn, st, "body_font", style["body_font"])
+        style["body_px"] = st.integer("body_px", min_value=28, max_value=96, default=style["body_px"],
+                                      allow_none=True)
+        style["heading_scale"] = st.number("heading_scale", min_value=1.2, max_value=3.5,
+                                           default=style["heading_scale"], allow_none=True)
+        for key in ("title_color", "subtitle_color", "bg_color2", "box_color"):
+            style[key] = _opt(st, key, style[key], lambda dv, k=key: st.color(k, default=dv))
+        style["bg_angle"] = st.integer("bg_angle", min_value=0, max_value=360, default=style["bg_angle"],
+                                       allow_none=True)
+        style["padding"] = st.choice("padding", ("s", "m", "l"), default=style["padding"], allow_none=True)
+        style["valign"] = st.choice("valign", ("top", "center", "bottom"), default=style["valign"], allow_none=True)
+        style["box"] = st.choice("box", ("none", "solid", "glass"), default=style["box"], allow_none=True)
+        style["box_radius"] = st.integer("box_radius", min_value=0, max_value=80, default=style["box_radius"],
+                                         allow_none=True)
+        style["rule"] = _opt(st, "rule", style["rule"], lambda dv: st.boolean("rule", default=dv))
+        style["logo_corner"] = st.choice("logo_corner", ("none", "top-left", "top-right", "bottom-left",
+                                                         "bottom-right"), default=style["logo_corner"], allow_none=True)
         d.merge(st)
     v.merge(d)
     return out
@@ -308,8 +379,9 @@ def normalize_design_config(conn, base, patch, v: Validator) -> dict:
     if "theme" in patch:
         t = _sub(c, patch.get("theme"), "theme")
         th = out["theme"]
-        th["font"] = t.choice("font", ("sans", "serif", "condensed"), default=th["font"])
+        th["font"] = _font_ref(conn, t, "font", th["font"], allow_none=False)
         th["accent_color"] = t.color("accent_color", default=th["accent_color"])
+        _typography(conn, t, th)
         c.merge(t)
     v.merge(c)
     return out
